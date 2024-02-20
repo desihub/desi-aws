@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+#DESI_ROOT="$HOME/docs/desi/desispec" ## debug
+
 debug=1
 if [[ $debug -eq "1" ]]
 then
@@ -10,6 +12,7 @@ fi
 
 #release="public/edr"
 release="public/edr/spectro/data/20201025/"
+#release="doc/" ## debug
 
 ### Setup error logs
 
@@ -42,7 +45,7 @@ while read line; do
 	line_from=$(echo "$line" | grep -P -o $regex_from)
 	line_to=$(echo "$line" | grep -P -o $regex_to)
 	if [[ -n $from ]]; then
-		echo "[Retry] $line_from > $line_to"
+		echo "[Retry] $line_from >> $line_to"
 		aws s3 cp "$line_from" "$line_to" 2>> "$retry_log"
 	fi
 done <"$sync_log"
