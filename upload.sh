@@ -53,8 +53,7 @@ sync_logs="$logdir/$timestamp/sync_logs.txt"
 sync_errs="$logdir/$timestamp/sync_errs.txt"
 retry_logs="$logdir/$timestamp/retry_logs.txt"
 retry_errs="$logdir/$timestamp/retry_errs.txt"
-echo "[$cmd : Info] Regular logs are kept at (s5cmd) $sync_logs and (aws-cli) $retry_logs"
-echo "[$cmd : Info] Error logs are kept at (s5cmd) $sync_errs and (aws-cli) $retry_errs"
+echo "[$cmd : Info] Logging in $logdir/$timestamp"
 
 ### Sync with S5cmd
 ### ---------------
