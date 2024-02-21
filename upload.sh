@@ -34,8 +34,8 @@ reldir="${absdir#$DESI_ROOT/}"
 ### Debug flags
 ### -----------
 
-simerr=1
-cleanup=1
+simerr=0
+cleanup=0
 if [[ $simerr -eq "1" ]]; then
 	echo "[$cmd : WARNING] Debug flag simerr==1. Will insert a dummy error during s5cmd sync."
 fi
@@ -61,7 +61,7 @@ echo "[$cmd : Info] Logging in $logdir/$timestamp"
 from="$DESI_ROOT/$reldir"
 to="$bucket/$reldir"
 echo "[$cmd : Info] s5cmd sync $from/ $to/"
-s5cmd sync --numworkers 16 "$from/" "$to/" >> "$sync_logs" 2>> "$sync_errs"
+s5cmd --numworkers 16 sync "$from/" "$to/" >> "$sync_logs" 2>> "$sync_errs"
 
 ### (Debug) Simulate sync error
 ### ---------------------------
@@ -75,16 +75,24 @@ fi
 ### Retry failures with aws-cli
 ### ---------------------------
 
-regex_from='(?<="cp\s).*?(?=\s)' # matches origin file
-regex_to='(?<=\s)s3://.*?(?=")' # matches destination file
-while read line; do
-	line_from=$(echo "$line" | grep -P -o $regex_from)
-	line_to=$(echo "$line" | grep -P -o $regex_to)
-	if [[ -n $from ]]; then
-		echo "[$cmd : Info] aws s3 cp $line_from $line_to"
-		aws s3 cp "$line_from" "$line_to" >> "$retry_logs" 2>> "$retry_errs"
-	fi
-done <"$sync_errs"
+if [[ $(cat $sync_errs | wc -l) -ne "0" ]]; then
+    echo "[$cmd : WARNING] An error occured with s5cmd sync. Retrying with aws-cli. See $sync_errs"
+
+    regex_from='(?<="cp\s).*?(?=\s)' # matches origin file
+    regex_to='(?<=\s)s3://.*?(?=")' # matches destination file
+    while read line; do
+        line_from=$(echo "$line" | grep -P -o $regex_from)
+        line_to=$(echo "$line" | grep -P -o $regex_to)
+        if [[ -n $from ]]; then
+            echo "[$cmd : Info] aws s3 cp $line_from $line_to"
+            aws s3 cp "$line_from" "$line_to" >> "$retry_logs" 2>> "$retry_errs"
+        fi
+    done <"$sync_errs"
+
+    if [[ $(cat $retry_errs | wc -l) -ne "0" ]]; then
+        echo "[$cmd : ERROR] An error occured in the retry attempt. See $retry_errs"
+    fi
+fi
 
 ### (Debug) Delete uploaded objects
 ### -------------------------------

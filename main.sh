@@ -40,7 +40,7 @@ fi
 ## Upload directory in chunks
 ## Chunk in depth of 3 (enough to chunk $DESI_ROOT/$reldir/spectro/data into per-night uploads)
 numdirs=$(echo $DESI_ROOT/$reldir/*/*/*/ | wc -w)
-echo "[$cmd: Info] Found $numdirs subdirectories at depth 3 from $DESI_ROOT/$reldir"
+echo "[$cmd : Info] Found $numdirs subdirectories at depth 3 from $DESI_ROOT/$reldir"
 i=0
 for subdir in $DESI_ROOT/$reldir/*/*/*/; do
     i=$(($i+1))
