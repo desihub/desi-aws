@@ -61,7 +61,7 @@ echo "[$cmd : Info] Logging in $logdir/$timestamp"
 from="$DESI_ROOT/$reldir"
 to="$bucket/$reldir"
 echo "[$cmd : Info] s5cmd sync $from/ $to/"
-s5cmd sync "$from/" "$to/" 2>> "$sync_errs" >> "$sync_logs"
+s5cmd sync "$from/" "$to/" >> "$sync_logs" 2>> "$sync_errs"
 
 ### (Debug) Simulate sync error
 ### ---------------------------
@@ -82,7 +82,7 @@ while read line; do
 	line_to=$(echo "$line" | grep -P -o $regex_to)
 	if [[ -n $from ]]; then
 		echo "[$cmd : Info] aws s3 cp $line_from $line_to"
-		aws s3 cp "$line_from" "$line_to" 2>> "$retry_errs" >> "$retry_logs"
+		aws s3 cp "$line_from" "$line_to" >> "$retry_logs" 2>> "$retry_errs"
 	fi
 done <"$sync_errs"
 
