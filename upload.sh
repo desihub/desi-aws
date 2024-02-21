@@ -37,28 +37,28 @@ reldir="${absdir#$DESI_ROOT/}"
 simerr=1
 cleanup=1
 if [[ $simerr -eq "1" ]]; then
-	echo "[$cmd : warning] Debug flag simerr==1. Will insert a dummy error during s5cmd sync."
+	echo "[$cmd : WARNING] Debug flag simerr==1. Will insert a dummy error during s5cmd sync."
 fi
 if [[ $cleanup -eq "1" ]]; then
-	echo "[$cmd : warning] Debug flag cleanup==1. Will delete all files uploaded during this session before exiting."
+	echo "[$cmd : WARNING] Debug flag cleanup==1. Will delete all files uploaded during this session before exiting."
 fi
 
 ### Logging
 ### -------
 
 timestamp=$(date +%s)
-logdir="upload_$timestamp"
-mkdir "$logdir"
-sync_log="$logdir/sync.txt"
-retry_log="$logdir/retry.txt"
-echo "[Logs] $sync_log $retry_log"
+logdir="upload_logs"
+mkdir -p "$logdir/$timestamp"
+sync_log="$logdir/$timestamp/sync.txt"
+retry_log="$logdir/$timestamp/retry.txt"
+echo "[$cmd : Info] $sync_log $retry_log"
 
 ### Sync with S5cmd
 ### ---------------
 
 from="$DESI_ROOT/$reldir"
 to="$bucket/$reldir"
-echo "[$cmd : info] s5cmd sync $from/ $to/"
+echo "[$cmd : Info] s5cmd sync $from/ $to/"
 s5cmd sync "$from/" "$to/" 2>> "$sync_log"
 
 ### (Debug) Simulate sync error
@@ -66,7 +66,7 @@ s5cmd sync "$from/" "$to/" 2>> "$sync_log"
 
 if [[ $simerr -eq "1" ]]
 then
-	echo "[$cmd : debug] Simulating sync error"
+	echo "[$cmd : Debug] Simulating sync error"
 	echo 'ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20201025/00062169/fvc-00062169.fits.fz s3://desiproto/public/edr/spectro/data/20201025/00062169/fvc-00062169.fits.fz": InvalidDigest: The Content-MD5 you specified was invalid. status code: 400, request id: S3TR4P2E0A2K3JMH7, host id: XTeMYKd2KECOHWk5S' > "$sync_log"
 fi
 
@@ -79,7 +79,7 @@ while read line; do
 	line_from=$(echo "$line" | grep -P -o $regex_from)
 	line_to=$(echo "$line" | grep -P -o $regex_to)
 	if [[ -n $from ]]; then
-		echo "[$cmd : info] aws s3 cp $line_from $line_to"
+		echo "[$cmd : Info] aws s3 cp $line_from $line_to"
 		aws s3 cp "$line_from" "$line_to" 2>> "$retry_log"
 	fi
 done <"$sync_log"
@@ -89,8 +89,8 @@ done <"$sync_log"
 
 if [[ $cleanup -eq "1" ]]
 then
-	echo "[$cmd : debug] Deleting uploaded objects"
+	echo "[$cmd : Debug] Deleting uploaded objects"
 	s5cmd rm "$to/*"
 fi
 
-echo "[$cmd : info] Done!"
+echo "[$cmd : Info] Done!"

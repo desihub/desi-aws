@@ -33,15 +33,15 @@ reldir="${absdir#$DESI_ROOT/}"
 
 i=0
 N=1
-for subdir in $DESI_ROOT/$reldir/*/; do
+for subdir in $DESI_ROOT/$reldir/*/*/; do
     abssubdir="${subdir%/}"
-    relsubdir="${abssubdir#$DESI_ROOT}"
-    echo "[$cmd : info] bash ./upload.sh $abssubdir"
-    bash ./upload.sh "$abssubdir"
+    relsubdir="${abssubdir#$DESI_ROOT/$reldir/}"
+    echo "[$cmd : Info] bash ./upload.sh $abssubdir"
+    # bash ./upload.sh "$abssubdir"
     if [[ $i -eq $N ]]; then
         break
     fi
 done
 
 
-echo "[$cmd : info] Done!"
+echo "[$cmd : Info] Done!"
