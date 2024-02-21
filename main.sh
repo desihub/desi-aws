@@ -39,14 +39,16 @@ if [[ $maxdirs -ge 0 ]]; then
 fi
 
 ## Upload directory in chunks
-i=0
 ## Chunk in depth of 3 (enough to chunk $DESI_ROOT/$reldir/spectro/data into per-night uploads)
+numdirs=$(echo $DESI_ROOT/$reldir/*/*/*/ | wc -w)
+echo "[$cmd: Info] Found $numdirs subdirectories at depth 3 from $DESI_ROOT/$reldir"
+i=0
 for subdir in $DESI_ROOT/$reldir/*/*/*/; do
+    i=$(($i+1))
     abssubdir="${subdir%/}"
     relsubdir="${abssubdir#$DESI_ROOT/$reldir/}"
-    echo "[$cmd : Info] bash ./upload.sh $abssubdir"
-    bash ./upload.sh "$abssubdir"
-    i=$(($i+1))
+    echo "[$cmd : Info] [$i/$numdirs] bash ./upload.sh $abssubdir"
+    # bash ./upload.sh "$abssubdir"
     if [[ $i -eq $maxdirs ]]; then
         echo "[$cmd : Info] \$maxdirs==$maxdirs exceeded. Stopping."
         break
