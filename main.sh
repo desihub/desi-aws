@@ -31,18 +31,24 @@ absdir="${1%/}"
 ## ${path/#$DESI_ROOT} truncates a leading $DESI_ROOT/
 reldir="${absdir#$DESI_ROOT/}"
 
-## Cap number of directories uploaded
+## (Debug) Cap number of directories uploaded
+maxdirs=8
+if [[ $maxdirs -ge 0 ]]; then
+    echo "[$cmd : WARNING] Debug flag \$maxdirs==$maxdirs is positive. Total number of uploads is capped."
+    break
+fi
+
+## Upload directory in chunks
 i=0
-MAX_DIRS=1
 ## Chunk in depth of 3 (enough to chunk $DESI_ROOT/$reldir/spectro/data into per-night uploads)
 for subdir in $DESI_ROOT/$reldir/*/*/*/; do
     abssubdir="${subdir%/}"
     relsubdir="${abssubdir#$DESI_ROOT/$reldir/}"
     echo "[$cmd : Info] bash ./upload.sh $abssubdir"
-    # bash ./upload.sh "$abssubdir"
+    bash ./upload.sh "$abssubdir"
     i=$(($i+1))
-    if [[ $i -eq $MAX_DIRS ]]; then
-        echo "[$cmd : Warning] \$MAX_DIRS exceeded. Stopping."
+    if [[ $i -eq $maxdirs ]]; then
+        echo "[$cmd : Info] \$maxdirs==$maxdirs exceeded. Stopping."
         break
     fi
 done
