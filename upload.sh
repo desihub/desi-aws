@@ -61,7 +61,7 @@ echo "[$cmd : Info] Logging in $logdir/$timestamp"
 from="$DESI_ROOT/$reldir"
 to="$bucket/$reldir"
 echo "[$cmd : Info] s5cmd sync $from/ $to/"
-s5cmd sync "$from/" "$to/" >> "$sync_logs" 2>> "$sync_errs"
+s5cmd sync --numworkers 16 "$from/" "$to/" >> "$sync_logs" 2>> "$sync_errs"
 
 ### (Debug) Simulate sync error
 ### ---------------------------
