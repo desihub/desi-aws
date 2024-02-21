@@ -35,7 +35,6 @@ reldir="${absdir#$DESI_ROOT/}"
 maxdirs=8
 if [[ $maxdirs -ge 0 ]]; then
     echo "[$cmd : WARNING] Debug flag \$maxdirs==$maxdirs is positive. Total number of uploads is capped."
-    break
 fi
 
 ## Upload directory in chunks
