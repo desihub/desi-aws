@@ -47,7 +47,7 @@ fi
 ### -------
 
 timestamp=$(date +%s)
-logdir="upload_errss"
+logdir="desi_upload_logs"
 mkdir -p "$logdir/$timestamp"
 sync_logs="$logdir/$timestamp/sync_logs.txt"
 sync_errs="$logdir/$timestamp/sync_errs.txt"

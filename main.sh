@@ -48,7 +48,7 @@ for subdir in $DESI_ROOT/$reldir/*/*/*/; do
     abssubdir="${subdir%/}"
     relsubdir="${abssubdir#$DESI_ROOT/$reldir/}"
     echo "[$cmd : Info] [$i/$numdirs] bash ./upload.sh $abssubdir"
-    # bash ./upload.sh "$abssubdir"
+    bash ./upload.sh "$abssubdir"
     if [[ $i -eq $maxdirs ]]; then
         echo "[$cmd : Info] \$maxdirs==$maxdirs exceeded. Stopping."
         break
