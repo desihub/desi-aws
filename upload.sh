@@ -47,11 +47,14 @@ fi
 ### -------
 
 timestamp=$(date +%s)
-logdir="upload_logs"
+logdir="upload_errss"
 mkdir -p "$logdir/$timestamp"
-sync_log="$logdir/$timestamp/sync.txt"
-retry_log="$logdir/$timestamp/retry.txt"
-echo "[$cmd : Info] $sync_log $retry_log"
+sync_logs="$logdir/$timestamp/sync_logs.txt"
+sync_errs="$logdir/$timestamp/sync_errs.txt"
+retry_logs="$logdir/$timestamp/retry_logs.txt"
+retry_errs="$logdir/$timestamp/retry_errs.txt"
+echo "[$cmd : Info] Regular logs are kept at (s5cmd) $sync_logs and (aws-cli) $retry_logs"
+echo "[$cmd : Info] Error logs are kept at (s5cmd) $sync_errs and (aws-cli) $retry_errs"
 
 ### Sync with S5cmd
 ### ---------------
@@ -59,7 +62,7 @@ echo "[$cmd : Info] $sync_log $retry_log"
 from="$DESI_ROOT/$reldir"
 to="$bucket/$reldir"
 echo "[$cmd : Info] s5cmd sync $from/ $to/"
-s5cmd sync "$from/" "$to/" 2>> "$sync_log"
+s5cmd sync "$from/" "$to/" 2>> "$sync_errs" >> "$sync_logs"
 
 ### (Debug) Simulate sync error
 ### ---------------------------
@@ -67,7 +70,7 @@ s5cmd sync "$from/" "$to/" 2>> "$sync_log"
 if [[ $simerr -eq "1" ]]
 then
 	echo "[$cmd : Debug] Simulating sync error"
-	echo 'ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20201025/00062169/fvc-00062169.fits.fz s3://desiproto/public/edr/spectro/data/20201025/00062169/fvc-00062169.fits.fz": InvalidDigest: The Content-MD5 you specified was invalid. status code: 400, request id: S3TR4P2E0A2K3JMH7, host id: XTeMYKd2KECOHWk5S' > "$sync_log"
+	echo 'ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20201025/00062169/fvc-00062169.fits.fz s3://desiproto/public/edr/spectro/data/20201025/00062169/fvc-00062169.fits.fz": InvalidDigest: The Content-MD5 you specified was invalid. status code: 400, request id: S3TR4P2E0A2K3JMH7, host id: XTeMYKd2KECOHWk5S' > "$sync_errs"
 fi
 
 ### Retry failures with aws-cli
@@ -80,9 +83,9 @@ while read line; do
 	line_to=$(echo "$line" | grep -P -o $regex_to)
 	if [[ -n $from ]]; then
 		echo "[$cmd : Info] aws s3 cp $line_from $line_to"
-		aws s3 cp "$line_from" "$line_to" 2>> "$retry_log"
+		aws s3 cp "$line_from" "$line_to" 2>> "$retry_errs" >> "$retry_logs"
 	fi
-done <"$sync_log"
+done <"$sync_errs"
 
 ### (Debug) Delete uploaded objects
 ### -------------------------------
