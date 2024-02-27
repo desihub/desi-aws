@@ -43,14 +43,15 @@ for (index, subdir) in enumerate(subdirs):
 
     print(f"{col.BOLD} {col.OKGREEN} {header} {col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
 
-    s5cmd = os.system(f"s5cmd --numworkers 16 {cmd} {abspath} {bucket}/{relpath}")
+    s5cmd = os.system(f"s5cmd --numworkers 16 --log error --stat {cmd} {abspath} {bucket}/{relpath}")
     if os.waitstatus_to_exitcode(s5cmd) == 0:
         continue
 
     print(f"{col.BOLD} {col.WARNING} {header} {col.OKCYAN} Failed to sync \"{relpath}\" with s5cmd. Retrying with aws-cli... {col.ENDC}")
+    sys.stderr.write("S5CMD ERROR: " + abspath + "\n")
     awscli = os.system(f"aws s3 {cmd} {abspath} {bucket}/{relpath}")
     if os.waitstatus_to_exitcode(awscli) == 0:
         continue
 
     print(f"{col.BOLD} {col.FAIL} {header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
-    sys.stderr.write(abspath + "\n")
+    sys.stderr.write("AWSCLI ERROR: " + abspath + "\n")
