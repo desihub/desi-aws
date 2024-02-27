@@ -1,0 +1,5 @@
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/checksum-00048009.sha256sum
+Traceback (most recent call last):
+  File "/global/u1/x/xingyzt/home/desi-upload-test/upload.py", line 28, in <module>
+    print(f"{OKBLUE} Exceeded maximum directory debug limit. Stopping...")
+NameError: name 'OKBLUE' is not defined

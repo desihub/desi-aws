@@ -1,14 +1,19 @@
 import json
 import sys
 
-try:
-    file = open("find.json")
-except Exception:
-    print('Missing "find.json". Run "./find" to calculate directory sizes.')
-
+file = open("find.json")
 d = json.load(file)
 
-root = sys.argv[1]
+try:
+    root = sys.argv[1]
+except Exception:
+    print("Please enter a directory")
+    quit(0)
+
+try:
+    exp = int(sys.argv[2])
+except Exception:
+    exp = 12
 
 def read(base, structure):
 
@@ -18,7 +23,7 @@ def read(base, structure):
     struct_size = structure[-1]
 
     print_parent = True
-    if struct_size > 1e12:
+    if struct_size > 10**exp:
         print_parent = False
 
         for child in struct_children:

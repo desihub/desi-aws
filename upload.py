@@ -1,6 +1,6 @@
 import sys
-from os import path
-import subprocess
+import os
+from os import system, path
 
 max_dirs = 8
 
@@ -8,11 +8,7 @@ root = sys.argv[1]
 
 bucket = "s3://desiproto"
 
-try:
-    file = open("select.txt")
-except Exception:
-    print('Missing "select.txt". Run "select.py" to create a list of directories to upload.')
-
+file = open("select.txt")
 subdirs = file.read().splitlines()
 subdirs_len = len(subdirs)
 
@@ -29,7 +25,7 @@ class col:
 
 for (index, subdir) in enumerate(subdirs):
     if index == max_dirs: 
-        print(f"{OKBLUE} Exceeded maximum directory debug limit. Stopping...")
+        print(f"{col.OKBLUE} Exceeded maximum directory debug limit. Stopping...")
         break
 
     header = f"[ {index+1}/{subdirs_len} ]"
@@ -47,20 +43,13 @@ for (index, subdir) in enumerate(subdirs):
 
     print(f"{col.BOLD} {col.OKGREEN} {header} {col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
 
-    s5cmd = subprocess.run([
-        "s5cmd", "--numworkers", "16",
-        cmd, f"{abspath}", f"{bucket}/{relpath}"
-    ])
-    if s5cmd.returncode == 0:
+    s5cmd = os.system(f"s5cmd --numworkers 16 {cmd} {abspath} {bucket}/{relpath}")
+    if os.waitstatus_to_exitcode(s5cmd) == 0:
         continue
 
     print(f"{col.BOLD} {col.WARNING} {header} {col.OKCYAN} Failed to sync \"{relpath}\" with s5cmd. Retrying with aws-cli... {col.ENDC}")
-    awscli = subprocess.run([
-        "aws", "s3",
-        cmd, f"{abspath}", f"{bucket}/{relpath}"
-    ])
-
-    if awscli.returncode == 0:
+    awscli = os.system(f"aws s3 {cmd} {abspath} {bucket}/{relpath}")
+    if os.waitstatus_to_exitcode(awscli) == 0:
         continue
 
     print(f"{col.BOLD} {col.FAIL} {header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
