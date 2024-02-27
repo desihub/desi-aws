@@ -1,7 +1,11 @@
 import json
 import sys
 
-file = open("find.json")
+try:
+    file = open("find.json")
+except Exception:
+    print('Missing "find.json". Run "./find" to calculate directory sizes.')
+
 d = json.load(file)
 
 root = sys.argv[1]

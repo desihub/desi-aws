@@ -2,11 +2,17 @@ import sys
 from os import path
 import subprocess
 
+max_dirs = 8
+
 root = sys.argv[1]
 
 bucket = "s3://desiproto"
 
-file = open("select.txt")
+try:
+    file = open("select.txt")
+except Exception:
+    print('Missing "select.txt". Run "select.py" to create a list of directories to upload.')
+
 subdirs = file.read().splitlines()
 subdirs_len = len(subdirs)
 
@@ -22,6 +28,9 @@ class col:
     UNDERLINE = '\033[4m'
 
 for (index, subdir) in enumerate(subdirs):
+    if index == max_dirs: 
+        print(f"{OKBLUE} Exceeded maximum directory debug limit. Stopping...")
+        break
 
     header = f"[ {index+1}/{subdirs_len} ]"
 
