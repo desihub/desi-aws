@@ -1,5 +1,32 @@
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/centroids-00048008.json s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/centroids-00048008.json": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/centroids-00048008.json not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/centroids-00048008.json does not exist.
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/centroids-00048008.json
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/checksum-00048008.sha256sum s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/checksum-00048008.sha256sum": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/checksum-00048008.sha256sum not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/checksum-00048008.sha256sum does not exist.
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/checksum-00048008.sha256sum
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/request-00048008.json s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/request-00048008.json": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/request-00048008.json not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/request-00048008.json does not exist.
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048008/request-00048008.json
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/centroids-00048009.json s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/centroids-00048009.json": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/centroids-00048009.json not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/centroids-00048009.json does not exist.
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/centroids-00048009.json
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/checksum-00048009.sha256sum s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/checksum-00048009.sha256sum": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/checksum-00048009.sha256sum not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/checksum-00048009.sha256sum does not exist.
 /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/checksum-00048009.sha256sum
-Traceback (most recent call last):
-  File "/global/u1/x/xingyzt/home/desi-upload-test/upload.py", line 28, in <module>
-    print(f"{OKBLUE} Exceeded maximum directory debug limit. Stopping...")
-NameError: name 'OKBLUE' is not defined
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/request-00048009.json s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/request-00048009.json": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/request-00048009.json not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/request-00048009.json does not exist.
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048009/request-00048009.json
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/centroids-00048010.json s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/centroids-00048010.json": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/centroids-00048010.json not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/centroids-00048010.json does not exist.
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/centroids-00048010.json
+ERROR "cp /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/checksum-00048010.sha256sum s3://desiproto/../../global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/checksum-00048010.sha256sum": given object /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/checksum-00048010.sha256sum not found
+
+The user-provided path /global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/checksum-00048010.sha256sum does not exist.
+/global/cfs/cdirs/desi/public/edr/spectro/data/20200211/00048010/checksum-00048010.sha256sum

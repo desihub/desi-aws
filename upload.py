@@ -25,7 +25,7 @@ class col:
 
 for (index, subdir) in enumerate(subdirs):
     if index == max_dirs: 
-        print(f"{col.OKBLUE} Exceeded maximum directory debug limit. Stopping...")
+        print(f"{col.OKBLUE} Exceeded maximum directory debug limit. Stopping... {col.ENDC}")
         break
 
     header = f"[ {index+1}/{subdirs_len} ]"
