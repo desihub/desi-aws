@@ -68,6 +68,7 @@ for (index, subdir) in enumerate(subdirs):
 
     s5cmd = os.system(f"s5cmd --numworkers 16 --log error --stat {cmd} {abspath} {bucket}/{relpath}")
     if os.waitstatus_to_exitcode(s5cmd) == 0: # if successful with s5cmd
+        select["failed"].remove(subdir) 
         select["completed"].append(subdir) 
         write(select) 
         continue
@@ -76,6 +77,7 @@ for (index, subdir) in enumerate(subdirs):
     sys.stderr.write("S5CMD ERROR: " + abspath + "\n")
     awscli = os.system(f"aws s3 {cmd} {abspath} {bucket}/{relpath}")
     if os.waitstatus_to_exitcode(awscli) == 0:
+        select["failed"].remove(subdir) 
         select["completed"].append(subdir) 
         write(select) 
         continue
@@ -83,5 +85,7 @@ for (index, subdir) in enumerate(subdirs):
     print(f"{col.BOLD} {col.FAIL} {header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
     sys.stderr.write("AWSCLI ERROR: " + abspath + "\n")
 
+    # If failed, log and add to end of queue
     select["failed"].append(subdir) 
+    select["queued"].append(subdir) 
     write(select) 
