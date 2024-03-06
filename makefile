@@ -6,8 +6,8 @@ find:
 find.json: find
 	./find $(release) > find.json
 
-select.txt: find.json
-	python3 select.py $(release) > select.txt
+select.json: find.json
+	python3 select.py $(release)
 
-upload: select.txt
-	python3 upload.py $(release) 2> upload_errors.txt
+upload: select.json
+	python3 upload.py $(release) 100 2> upload_errors.txt

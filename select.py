@@ -1,8 +1,14 @@
 import json
 import sys
 
-file = open("find.json")
-d = json.load(file)
+with open("find.json") as f:
+    indict = json.load(f)
+
+outdict = {
+        "completed": [],
+        "queued": [],
+        "failed": [],
+        }
 
 try:
     root = sys.argv[1]
@@ -30,8 +36,10 @@ def read(base, structure):
             child_name = child[0]
             child_path = base + "/" + child_name
             if read(child_path, child):
-                print(child_path)
+                outdict["queued"].append(child_path)
 
     return print_parent
 
-read(root, d)
+read(root, indict)
+with open("select.json", "w") as f:
+    json.dump(outdict, f)
