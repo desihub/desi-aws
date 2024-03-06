@@ -23,10 +23,10 @@ except Exception:
     quit(0)
 
 try:
-    max_dirs = sys.argv[2]
+    max_dirs = int(sys.argv[2])
 except Exception:
     max_dirs = 8
-print(f"{col.GREEN} Uploading a maximum of {max_dirs} directories... {col.ENDC}")
+print(f"{col.OKGREEN} Uploading a maximum of {max_dirs} directories... {col.ENDC}")
 
 with open("select.json") as f:
     select = json.load(f)
