@@ -1,6 +1,9 @@
 import json
 import sys
 
+## Select files and directories over a certain file size.
+## Avoids overcounting children of selected directories.
+
 with open("find.json") as f:
     indict = json.load(f)
 
@@ -10,16 +13,22 @@ outdict = {
         "failed": [],
         }
 
+### SCRIPT ARGUMENTS
+
+## Root directory; Quit if not provided
 try:
     root = sys.argv[1]
 except Exception:
     print("Please enter a directory")
     quit(0)
 
+## Log base 2 of the min size threshold in bytes; Default 12 (one terabyte)
 try:
     exp = int(sys.argv[2])
 except Exception:
     exp = 12
+
+### ENTRY SELECTION
 
 def read(base, structure):
 
@@ -39,6 +48,8 @@ def read(base, structure):
                 outdict["queued"].append(child_path)
 
     return print_parent
+
+### WRITE
 
 read(root, indict)
 with open("select.json", "w") as f:

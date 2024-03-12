@@ -8,6 +8,13 @@
 
 namespace fs = std::filesystem;
 
+// ========
+// Filesystem JSON tree generator
+//
+// Generates a JSON tree of the files and directories, 
+// including their sizes (in bytes), recursively calculated for directories
+// ========
+
 // Entry: A directory or file
 
 // Entry_type: Differentiates directories and various file types.
@@ -83,9 +90,13 @@ int main(int argc, char* argv[])
     if(argc <= 1) {
         std::cout << "\n";
         std::cout << "Filesystem JSON tree generator" << "\n";
+        std::cout << "| Generates a JSON tree of the files and directories," << "\n";
+        std::cout << "| including their sizes (in bytes), recursively calculated for directories." << "\n";
+        std::cout << "\n";
         std::cout << "usage: gen <path> [max depth]" << "\n";
         std::cout << "| <path>: required; path to base directory" << "\n";
         std::cout << "| [max depth]: optional; default unlimited (-1); maximum search depth" << "\n";
+        std::cout << "\n";
         std::cout << "output: [ <name>, <child 1>, <child 2>, ... , <type>, <size> ]" << "\n";
         std::cout << "| <name>: name of file or directory" << "\n";
         std::cout << "| <type>: type of file or directory" << "\n";
