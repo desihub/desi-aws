@@ -3,6 +3,8 @@ import os
 import json
 from os import system, path
 
+### FANCY COLORS
+
 class col:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -14,28 +16,42 @@ class col:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-### INPUTS
+### SCRIPT ARGUMENTS
 
+## Root directory; Quit if not provided
 try:
     root = sys.argv[1]
 except Exception:
     print("Please enter a directory")
     quit(0)
 
+## Max number of directories to upload; Default 8
 try:
     max_dirs = int(sys.argv[2])
 except Exception:
     max_dirs = 8
 print(f"{col.OKGREEN} Uploading a maximum of {max_dirs} directories... {col.ENDC}")
 
+## Max number of workers (simultaneous processes); Default 128
+try:
+    max_workers = int(sys.argv[3])
+except Exception:
+    max_workers = 128
+print(f"{col.OKGREEN} Running a maximum of {max_workers} workers... {col.ENDC}")
+
+### INPUT FILE
+
+## Load directory list
 with open("select.json") as f:
     select = json.load(f)
 
+## Upload directories from queue
 subdirs = select["queued"]
 subdirs_len = len(subdirs)
 
-### OUTPUTS
+### OUTPUT FILE
 
+## For updating directory list
 def write(data):
     with open("select.json", "w") as f:
         json.dump(data, f)
@@ -45,47 +61,64 @@ bucket = "s3://desiproto"
 ### UPLOADS
 
 for (index, subdir) in enumerate(subdirs):
+
+    ## Stop if max_dirs exceeded
     if index == max_dirs: 
         print(f"{col.OKBLUE} Finished uploading {max_dirs} directories. Stopping... {col.ENDC}")
         break
 
+    ## Progress fraction indicator
     header = f"[ {index+1}/{subdirs_len} ]"
 
+    ## Absolute and relative path to directory/file
     abspath = path.abspath(subdir)
-    isdir = path.isdir(abspath)
     relpath = path.relpath(abspath, root)
 
-    select["queued"].remove(subdir) 
-
-    cmd = "cp"
-
+    ## Directory or file? 
+    ## They have different upload commands, and directory path names need to terminate with /
+    isdir = path.isdir(abspath)
     if isdir:
         abspath += "/"
         relpath += "/"
         cmd = "sync"
+    else:
+        cmd "cp"
+
+    ### ATTEMPT 1: S5CMD
 
     print(f"{col.BOLD} {col.OKGREEN} {header} {col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
 
-    s5cmd = os.system(f"s5cmd --numworkers 16 --log error --stat {cmd} {abspath} {bucket}/{relpath}")
-    if os.waitstatus_to_exitcode(s5cmd) == 0: # if successful with s5cmd
+    s5cmd = os.system(f"s5cmd --numworkers {max_workers} --log error --stat {cmd} {abspath} {bucket}/{relpath}")
+    
+    ## Update queue if success
+    if os.waitstatus_to_exitcode(s5cmd) == 0:
+        select["queued"].remove(subdir) 
         select["failed"].remove(subdir) 
         select["completed"].append(subdir) 
         write(select) 
         continue
 
+    ## Retry with aws-cli if fail
     print(f"{col.BOLD} {col.WARNING} {header} {col.OKCYAN} Failed to sync \"{relpath}\" with s5cmd. Retrying with aws-cli... {col.ENDC}")
     sys.stderr.write("S5CMD ERROR: " + abspath + "\n")
+
+    ### ATTEMPT 2: AWSCLI
+
     awscli = os.system(f"aws s3 {cmd} {abspath} {bucket}/{relpath}")
+
+    ## Update queue if success
     if os.waitstatus_to_exitcode(awscli) == 0:
+        select["queued"].remove(subdir) 
         select["failed"].remove(subdir) 
         select["completed"].append(subdir) 
         write(select) 
         continue
 
+    ## Update queue if fail
     print(f"{col.BOLD} {col.FAIL} {header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
     sys.stderr.write("AWSCLI ERROR: " + abspath + "\n")
 
-    # If failed, log and add to end of queue
+    select["queued"].remove(subdir) 
     select["failed"].append(subdir) 
     select["queued"].append(subdir) 
     write(select) 
