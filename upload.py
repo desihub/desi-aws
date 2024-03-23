@@ -78,7 +78,7 @@ while len(select["queued"]) > 0:
     index += 1
 
     ## Progress fraction indicator
-    header = f"[ {index+1}/{subdirs_len} ]"
+    header = f"[ {index}/{subdirs_len} ]"
 
     ## Absolute and relative path to directory/file
     abspath = path.abspath(subdir)
