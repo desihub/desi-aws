@@ -31,20 +31,6 @@ except Exception:
     print("Please enter a directory")
     quit(0)
 
-## Max number of directories to upload; Default 8
-try:
-    max_dirs = int(sys.argv[2])
-except Exception:
-    max_dirs = 8
-print(f"{col.OKGREEN} Uploading a maximum of {max_dirs} directories... {col.ENDC}")
-
-## Max number of workers (simultaneous processes); Default 128
-try:
-    max_workers = int(sys.argv[3])
-except Exception:
-    max_workers = 128
-print(f"{col.OKGREEN} Running a maximum of {max_workers} workers... {col.ENDC}")
-
 ### INPUT FILE
 
 ## Load directory list
@@ -52,8 +38,25 @@ with open("select.json") as f:
     select = json.load(f)
 
 ## Upload directories from queue
-subdirs = select["queued"]
-subdirs_len = len(subdirs)
+print(f"""
+ {len(select["completed"]) + len(select["queued"])} {col.OKBLUE}directories listed for upload{col.ENDC}
+ - {len(select["completed"])} {col.OKBLUE}already completed{col.ENDC}
+ - {len(select["queued"])} {col.OKBLUE}queued (including {len(select["failed"])} previously failed){col.ENDC}
+""")
+
+## Max number of directories to upload; Default 8
+try:
+    max_dirs = int(sys.argv[2])
+except Exception:
+    max_dirs = 8
+print(f"{col.OKGREEN} Uploading a maximum of {max_dirs} directories in this run {col.ENDC}")
+
+## Max number of workers (simultaneous processes); Default 128
+try:
+    max_workers = int(sys.argv[3])
+except Exception:
+    max_workers = 128
+print(f"{col.OKGREEN} Using a maximum of {max_workers} workers {col.ENDC}")
 
 ### OUTPUT FILE
 
@@ -78,7 +81,7 @@ while len(select["queued"]) > 0:
     index += 1
 
     ## Progress fraction indicator
-    header = f"[ {index}/{subdirs_len} ]"
+    header = f"[ {index}/{max_dirs} ]"
 
     ## Absolute and relative path to directory/file
     abspath = path.abspath(subdir)
@@ -132,3 +135,9 @@ while len(select["queued"]) > 0:
     select["failed"].append(subdir) 
     select["queued"].append(subdir) 
     write(select) 
+
+print(f"""
+ {len(select["completed"]) + len(select["queued"])} {col.OKBLUE}directories listed for upload{col.ENDC}
+ - {len(select["completed"])} {col.OKBLUE}now completed{col.ENDC}
+ - {len(select["queued"])} {col.OKBLUE}still queued (including {len(select["failed"])} failed){col.ENDC}
+""")
