@@ -82,7 +82,7 @@ for (index, subdir) in enumerate(subdirs):
         relpath += "/"
         cmd = "sync"
     else:
-        cmd "cp"
+        cmd = "cp"
 
     ### ATTEMPT 1: S5CMD
 
