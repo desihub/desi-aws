@@ -2,6 +2,7 @@ import sys
 import os
 import json
 from os import system, path
+from datetime import datetime
 
 ### FANCY COLORS
 
@@ -15,6 +16,11 @@ class col:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+
+### TIMESTAMP
+
+def timestamp():
+    return f"[ {datetime.now().strftime('%H:%M:%S')} ]"
 
 ### SCRIPT ARGUMENTS
 
@@ -64,7 +70,7 @@ for (index, subdir) in enumerate(subdirs):
 
     ## Stop if max_dirs exceeded
     if index == max_dirs: 
-        print(f"{col.OKBLUE} Finished uploading {max_dirs} directories. Stopping... {col.ENDC}")
+        print(f"{timestamp()} {col.OKBLUE} Finished uploading {max_dirs} directories. Stopping... {col.ENDC}")
         break
 
     ## Progress fraction indicator
@@ -86,7 +92,7 @@ for (index, subdir) in enumerate(subdirs):
 
     ### ATTEMPT 1: S5CMD
 
-    print(f"{col.BOLD} {col.OKGREEN} {header} {col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
+    print(f"{timestamp()} {col.BOLD} {col.OKGREEN} {header} {col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
 
     s5cmd = os.system(f"s5cmd --numworkers {max_workers} --log error --stat {cmd} {abspath} {bucket}/{relpath}")
     
@@ -99,7 +105,7 @@ for (index, subdir) in enumerate(subdirs):
         continue
 
     ## Retry with aws-cli if fail
-    print(f"{col.BOLD} {col.WARNING} {header} {col.OKCYAN} Failed to sync \"{relpath}\" with s5cmd. Retrying with aws-cli... {col.ENDC}")
+    print(f"{timestamp()} {col.BOLD} {col.WARNING} {header} {col.OKCYAN} Failed to sync \"{relpath}\" with s5cmd. Retrying with aws-cli... {col.ENDC}")
     sys.stderr.write("S5CMD ERROR: " + abspath + "\n")
 
     ### ATTEMPT 2: AWSCLI
@@ -115,7 +121,7 @@ for (index, subdir) in enumerate(subdirs):
         continue
 
     ## If failed again, move to end of queue and append to failed list
-    print(f"{col.BOLD} {col.FAIL} {header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
+    print(f"{timestamp()} {col.BOLD} {col.FAIL} {header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
     sys.stderr.write("AWSCLI ERROR: " + abspath + "\n")
 
     select["queued"].remove(subdir) 
