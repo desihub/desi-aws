@@ -10,4 +10,4 @@ select.json: find.json
 	python3 select.py $(release)
 
 upload: select.json
-	python3 upload.py $(release) 100 2> upload_errors.txt
+	python3 upload.py $(release) 100 128 2> upload_errors.txt
