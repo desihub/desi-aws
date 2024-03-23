@@ -66,12 +66,16 @@ bucket = "s3://desiproto"
 
 ### UPLOADS
 
-for (index, subdir) in enumerate(subdirs):
+index = 0
+while len(select["queued"]) > 0:
 
     ## Stop if max_dirs exceeded
     if index == max_dirs: 
-        print(f"{timestamp()} {col.OKBLUE} Finished uploading {max_dirs} directories. Stopping... {col.ENDC}")
+        print(f"{timestamp()} {col.OKBLUE}Finished uploading {max_dirs} directories. Stopping... {col.ENDC}")
         break
+
+    subdir = select["queued"][0]
+    index += 1
 
     ## Progress fraction indicator
     header = f"[ {index+1}/{subdirs_len} ]"
@@ -92,7 +96,7 @@ for (index, subdir) in enumerate(subdirs):
 
     ### ATTEMPT 1: S5CMD
 
-    print(f"{timestamp()} {col.BOLD} {col.OKGREEN} {header} {col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
+    print(f"{timestamp()} {col.BOLD}{col.OKGREEN}{header}{col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
 
     s5cmd = os.system(f"s5cmd --numworkers {max_workers} --log error --stat {cmd} {abspath} {bucket}/{relpath}")
     
@@ -105,7 +109,7 @@ for (index, subdir) in enumerate(subdirs):
         continue
 
     ## Retry with aws-cli if fail
-    print(f"{timestamp()} {col.BOLD} {col.WARNING} {header} {col.OKCYAN} Failed to sync \"{relpath}\" with s5cmd. Retrying with aws-cli... {col.ENDC}")
+    print(f"{timestamp()} {col.BOLD}{col.WARNING}{header}{col.OKCYAN} Failed to sync \"{relpath}\" with s5cmd. Retrying with aws-cli... {col.ENDC}")
     sys.stderr.write("S5CMD ERROR: " + abspath + "\n")
 
     ### ATTEMPT 2: AWSCLI
@@ -121,7 +125,7 @@ for (index, subdir) in enumerate(subdirs):
         continue
 
     ## If failed again, move to end of queue and append to failed list
-    print(f"{timestamp()} {col.BOLD} {col.FAIL} {header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
+    print(f"{timestamp()} {col.BOLD}{col.FAIL}{header} Failed to sync \"{relpath}\" with awscli! {col.ENDC}")
     sys.stderr.write("AWSCLI ERROR: " + abspath + "\n")
 
     select["queued"].remove(subdir) 
