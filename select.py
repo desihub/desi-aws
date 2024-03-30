@@ -54,3 +54,4 @@ def read(base, structure):
 read(root, indict)
 with open("select.json", "w") as f:
     json.dump(outdict, f)
+    f.write("\n")
