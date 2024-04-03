@@ -3,6 +3,21 @@ import os
 import json
 from os import system, path
 from datetime import datetime
+import argparse
+
+parser = argparse.ArgumentParser(
+    prog='upload.py',
+    description=
+    """
+Uploads stuff
+    """
+)
+parser.add_argument('root', help='path to the root directory')
+parser.add_argument('--bucket', help='URI to S3 bucket (s3://bucket)')
+parser.add_argument('--selection', help='path to the list of selected nodes')
+parser.add_argument('--max-dirs', type=int, help='maximum number of selected nodes to upload')
+parser.add_argument('--max-workers', type=int, help='maximum number of workers to use')
+args = parser.parse_args()
 
 ### FANCY COLORS
 
@@ -22,19 +37,10 @@ class col:
 def timestamp():
     return f"[ {datetime.now().strftime('%H:%M:%S')} ]"
 
-### SCRIPT ARGUMENTS
-
-## Root directory; Quit if not provided
-try:
-    root = sys.argv[1]
-except Exception:
-    print("Please enter a directory")
-    quit(0)
-
 ### INPUT FILE
 
 ## Load directory list
-with open("select.json") as f:
+with open(args.selection) as f:
     select = json.load(f)
 
 ## Upload directories from queue
@@ -49,14 +55,9 @@ try:
     max_dirs = int(sys.argv[2])
 except Exception:
     max_dirs = 8
-print(f"{col.OKGREEN} Uploading a maximum of {max_dirs} directories in this run {col.ENDC}")
+print(f"{col.OKGREEN} Uploading a maximum of {args.max_dirs} directories in this run {col.ENDC}")
 
-## Max number of workers (simultaneous processes); Default 128
-try:
-    max_workers = int(sys.argv[3])
-except Exception:
-    max_workers = 128
-print(f"{col.OKGREEN} Using a maximum of {max_workers} workers {col.ENDC}")
+print(f"{col.OKGREEN} Using a maximum of {args.max_workers} workers {col.ENDC}")
 
 ### OUTPUT FILE
 
@@ -65,27 +66,25 @@ def write(data):
     with open("select.json", "w") as f:
         json.dump(data, f)
 
-bucket = "s3://desiproto"
-
 ### UPLOADS
 
 index = 0
 while len(select["queued"]) > 0:
 
     ## Stop if max_dirs exceeded
-    if index == max_dirs: 
-        print(f"{timestamp()} {col.OKBLUE}Finished uploading {max_dirs} directories. Stopping... {col.ENDC}")
+    if index == args.max_dirs: 
+        print(f"{timestamp()} {col.OKBLUE}Finished uploading {args.max_dirs} directories. Stopping... {col.ENDC}")
         break
 
     subdir = select["queued"][0]
     index += 1
 
     ## Progress fraction indicator
-    header = f"[ {index}/{max_dirs} ]"
+    header = f"[ {index}/{args.max_dirs} ]"
 
     ## Absolute and relative path to directory/file
     abspath = path.abspath(subdir)
-    relpath = path.relpath(abspath, root)
+    relpath = path.relpath(abspath, args.root)
 
     ## Directory or file? 
     ## They have different upload commands, and directory path names need to terminate with /
@@ -101,7 +100,7 @@ while len(select["queued"]) > 0:
 
     print(f"{timestamp()} {col.BOLD}{col.OKGREEN}{header}{col.OKCYAN} Syncing \"{relpath}\" with s5cmd... {col.ENDC}")
 
-    s5cmd = os.system(f"s5cmd --numworkers {max_workers} --log error --stat {cmd} {abspath} {bucket}/{relpath}")
+    s5cmd = os.system(f"s5cmd --numworkers {args.max_workers} --log error --stat {cmd} {abspath} {args.bucket}/{relpath}")
     
     ## Remove from queue if success
     if os.waitstatus_to_exitcode(s5cmd) == 0:
@@ -117,7 +116,7 @@ while len(select["queued"]) > 0:
 
     ### ATTEMPT 2: AWSCLI
 
-    awscli = os.system(f"aws s3 {cmd} {abspath} {bucket}/{relpath}")
+    awscli = os.system(f"aws s3 {cmd} {abspath} {args.bucket}/{relpath}")
 
     ## Remove from queue if success
     if os.waitstatus_to_exitcode(awscli) == 0:

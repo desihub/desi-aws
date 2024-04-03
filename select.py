@@ -1,32 +1,30 @@
 import json
 import sys
+import argparse
 
-## Select files and directories over a certain file size.
-## Avoids overcounting children of selected directories.
+parser = argparse.ArgumentParser(
+    prog='select.py',
+    description=
+    """
+Select files and directories over a certain file size.
+Avoids overcounting children of selected directories.
+    """
+)
+parser.add_argument('root', help='path to the root directory')
+parser.add_argument('--file-tree', help='path to the file tree')
+parser.add_argument('--selection', help='path to the top directory to upload')
+parser.add_argument('--min-size', type=int, help='largest size (in bytes) to upload separately')
+parser.add_argument('-o', '--out', help='outfile')
+args = parser.parse_args()
 
-with open("find.json") as f:
+with open(args.file_tree) as f:
     indict = json.load(f)
 
 outdict = {
-        "completed": [],
-        "queued": [],
-        "failed": [],
-        }
-
-### SCRIPT ARGUMENTS
-
-## Root directory; Quit if not provided
-try:
-    root = sys.argv[1]
-except Exception:
-    print("Please enter a directory")
-    quit(0)
-
-## Log base 2 of the min size threshold in bytes; Default 12 (one terabyte)
-try:
-    exp = int(sys.argv[2])
-except Exception:
-    exp = 12
+    "completed": [],
+    "queued": [],
+    "failed": [],
+}
 
 ### ENTRY SELECTION
 
@@ -37,8 +35,8 @@ def read(base, structure):
     struct_children = structure[2:-1]
     struct_size = structure[-1]
 
-    print_parent = True
-    if struct_size > 10**exp:
+    print_parent = args.selection.startswith(base) or base.startswith(args.selection)
+    if struct_size > args.min_size:
         print_parent = False
 
         for child in struct_children:
@@ -51,7 +49,7 @@ def read(base, structure):
 
 ### WRITE
 
-read(root, indict)
-with open("select.json", "w") as f:
+read(args.root, indict)
+with open(args.out, "w") as f:
     json.dump(outdict, f)
     f.write("\n")

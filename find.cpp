@@ -5,8 +5,10 @@
 #include <stdexcept>
 #include <utility>
 #include <map>
+#include <boost/program_options.hpp>
 
 namespace fs = std::filesystem;
+namespace po = boost::program_options;
 
 // ========
 // Filesystem JSON tree generator
@@ -87,27 +89,49 @@ std::uintmax_t hierarchy(fs::path path, struct Entry_key key, int depth)
 
 int main(int argc, char* argv[])
 {
-    if(argc <= 1) {
-        std::cout << "\n";
-        std::cout << "Filesystem JSON tree generator" << "\n";
-        std::cout << "| Generates a JSON tree of the files and directories," << "\n";
-        std::cout << "| including their sizes (in bytes), recursively calculated for directories." << "\n";
-        std::cout << "\n";
-        std::cout << "usage: gen <path> [max depth]" << "\n";
-        std::cout << "| <path>: required; path to base directory" << "\n";
-        std::cout << "| [max depth]: optional; default unlimited (-1); maximum search depth" << "\n";
-        std::cout << "\n";
-        std::cout << "output: [ <name>, <child 1>, <child 2>, ... , <type>, <size> ]" << "\n";
-        std::cout << "| <name>: name of file or directory" << "\n";
-        std::cout << "| <type>: type of file or directory" << "\n";
-        std::cout << "| <child N>: recursive structure" << "\n";
-        std::cout << "\n";
-        return 0;
+    int max_depth;
+    std::string base_directory;
+
+    // Program description and arguments
+    
+    po::options_description options_description(
+        "\n"
+        "Filesystem JSON tree generator \n" 
+        "  Generates a JSON tree of the files and directories, \n" 
+        "  including their sizes (in bytes), recursively calculated for directories. \n" 
+        "\n"
+        "Each node in tree has the structure \n"
+        "[ <name>, <child 1>, <child 2>, ... , <type>, <size> ] \n" 
+        "  <name>   \tname of file or directory \n" 
+        "  <child N>\tchild node for child file or directory \n" 
+        "  <type>   \t0 for directory, 1 for file \n" 
+        "  <size>   \tsize of file or directory (including children), in bytes \n" 
+        "\n"
+        "Options"
+    );
+    options_description.add_options()
+        ("help", "prints this help message")
+        ("root", po::value<std::string>(&base_directory)->default_value("."), "path to the root directory")
+        ("depth", po::value<int>(&max_depth)->default_value(-1), "maximum crawl depth; -1=infinite")
+    ;
+    po::positional_options_description positional_options;
+    positional_options.add("root", -1);
+
+    // Parse command line arguments
+    po::variables_map variables_map;
+    po::store(
+        po::command_line_parser(argc, argv)
+            .options(options_description)
+            .positional(positional_options)
+            .run(), 
+        variables_map
+    );
+    po::notify(variables_map);
+    // Print description with --help
+    if (variables_map.count("help")) {
+        std::cerr << options_description << "\n";
+        return 1;
     }
-
-    const std::string base_directory = argv[1];
-
-    int max_depth = (argc >= 3) ? atoi(argv[2]) : -1;
 
     const fs::path base_path{base_directory};
     const struct Entry_key base_key = { 
