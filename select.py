@@ -28,6 +28,11 @@ outdict = {
 
 ### ENTRY SELECTION
 
+def common_origin(a, b):
+    a += "/"
+    b += "/"
+    return a.startswith(b) or b.startswith(a)
+
 def read(base, structure):
 
     struct_name = structure[0]
@@ -35,7 +40,7 @@ def read(base, structure):
     struct_children = structure[2:-1]
     struct_size = structure[-1]
 
-    print_parent = args.selection.startswith(base) or base.startswith(args.selection)
+    print_parent = common_origin(args.selection, base)
     if struct_size > args.min_size:
         print_parent = False
 
