@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/home/xingyzt/Documents/desi/upload/upload.py", line 29, in <module>
-    print(f"{col.GREEN} Uploading a maximum of {max_dirs} directories... {col.ENDC}")
-AttributeError: type object 'col' has no attribute 'GREEN'. Did you mean: 'OKGREEN'?
