@@ -1,5 +1,5 @@
 # Base directory in S3 bucket
-root=/dvs_ro/cfs/cdirs/desi/public
+root=$(DESI_ROOT)/public
 
 # Specific data release
 release=$(root)/edr
