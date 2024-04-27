@@ -1,5 +1,5 @@
 # Base directory in S3 bucket
-root=$(DESI_ROOT)/public
+root=/dvs_ro/cfs/cdirs/desi/public
 
 # Specific data release
 release=$(root)/edr
@@ -24,7 +24,7 @@ upload: upload.py select.json
 	python3 upload.py $(root) \
 		--bucket s3://desiproto \
 		--selection select.json \
-		--remap '{ "$(release)/spectro/data": "raw-spectro-data", "$(release)/target": "target" }' \
+		--remap '{ "$(release)/spectro/data": "raw_spectro_data", "$(release)/target": "target" }' \
 		--max-dirs 100 \
 		--max-workers 128 \
 		2> upload_errors.txt
