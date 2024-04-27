@@ -22,7 +22,7 @@ select.json: select.py find.json
 # Upload: Upload batch directories
 upload: upload.py select.json
 	python3 upload.py $(root) \
-		--bucket s3://desiproto \
+		--bucket s3://desidata \
 		--selection select.json \
 		--remap '{ "$(release)/spectro/data": "raw_spectro_data", "$(release)/target": "target" }' \
 		--max-dirs 100 \
