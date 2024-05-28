@@ -2,14 +2,20 @@
 root=$(DESI_ROOT)/public
 
 # Specific data release
-release=$(root)/edr/spectro/redux/fuji
+release=$(root)/edr
 
 # Subdirectory that we want to upload
 subdir=$(release)
 
 # Find: Scan for filesystem structure in the release
 find.json: find.py
-	python3 find.py $(release) -o $@
+	python3 find.py $(release) --nproc 128 --minproc 128 -o $@
+
+# Build c++ scanning program (for benchmarking)
+find: find.cpp
+	g++ find.cpp -std=c++20 -lboost_program_options -o $@
+find.c.json: find
+	./find $(release) > $@
 
 # Batch: Batch upload paths into large directories (>10^12 bytes), and add these to the queue
 batch.json: batch.py find.json

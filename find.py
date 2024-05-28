@@ -61,21 +61,20 @@ class Entry:
 
 # Recursively traverses filesystem tree, printing entry names, types, and sizes.
 # The sizes of directories are calculated recursively.
-def traverse(entry):
-
+def traverse(entry, parallel=False):
     if entry.type == Entry_type.DIRECTORY:
         if entry.depth == args.depth: return entry
 
-        child_entries = sorted([ 
-                                Entry( os.path.join(entry.path, child_name), depth=entry.depth+1 ) 
-                                for child_name in os.listdir(entry.path) 
-                        ])
+        child_depth = entry.depth + 1
+        entry.children = sorted([ Entry( os.path.join(entry.path, child_name), depth=child_depth ) for child_name in os.listdir(entry.path) ])
 
-        if args.nproc > 1 and entry.depth == 0: 
+        if parallel:
+            entry.children = list(map(traverse_parallel, entry.children))
+        elif (len(entry.children) >= args.minproc) and (args.nproc > 1):
             with Pool(args.nproc) as pool:
-                entry.children = list(pool.map(traverse, child_entries))
+                entry.children = list(pool.map(traverse_parallel, entry.children))
         else:
-            entry.children = list(map(traverse, child_entries))
+            entry.children = list(map(traverse, entry.children))
 
         entry.size = sum(child.size for child in entry.children)
 
@@ -87,6 +86,9 @@ def traverse(entry):
             sys.stderr.flush()
 
     return entry
+
+def traverse_parallel(entry):
+    return traverse(entry, parallel=True)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
@@ -106,7 +108,8 @@ Each entry in tree has the structure
     )
     parser.add_argument('root', help='path to the root directory')
     parser.add_argument('--depth', type=int, default=-1, help="maximum search depth; -1=infinity")
-    parser.add_argument('--nproc', type=int, default=1, help="number of multiprocessing processes to use")
+    parser.add_argument('--nproc', type=int, default=1, help="maximum number of multiprocessing processes to use")
+    parser.add_argument('--minproc', type=int, default=1, help="minimum number of multiprocessing processes to use")
     parser.add_argument('-o', '--out', help='output file')
     args = parser.parse_args()
 
