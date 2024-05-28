@@ -13,7 +13,10 @@ import json
 # including their sizes (in bytes), recursively calculated for directories
 # ========
 
+# Fancy ANSI codes for adding color and other text formatting into the logging
 class col:
+
+    # Colors
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKCYAN = '\033[96m'
@@ -21,21 +24,28 @@ class col:
     WARNING = '\033[93m'
     FAIL = '\033[91m'
     ENDC = '\033[0m'
+
+    # Fonts
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
                 
+    # Clear current line, go one line up, then go to start of line
     UNDOLINE = '\033[A\33[2KT\r'
 
-class Log:
+# Checklist-like logging
+class Logger:
     def __init__(self):
         self.state = dict()
         self.n = 0
     def queue(self, path):
-        self.state[path] = col.OKBLUE + 'Queued \t' + col.ENDC
+        self.state[path] = col.OKBLUE  + 'Queued  \t' + col.ENDC
         self.log()
         self.n += 1
+    def working(self, path):
+        self.state[path] = col.OKCYAN  + 'Crawling\t' + col.ENDC
+        self.log()
     def finish(self, path):
-        self.state[path] = col.OKGREEN + 'Crawled\t' + col.ENDC
+        self.state[path] = col.OKGREEN + 'Crawled \t' + col.ENDC
         self.log()
     def log(self):
         print(
@@ -56,22 +66,30 @@ class Entry_type(IntEnum):
 # - name: string. This entry's base name.
 # - type: int. The enum of this entry's type, given by Entry_type.
 # - size: int. This entry's byte size, calculated recursively for directories.
-# - children: Array<Entry>. This entry's files and subdirectories, if they exist.
-# It is ordered such that directories are before files (compare_type), then alphabetically (compare_name).
-# Only the name, type, size, and children are included in the final JSON tree
+# - children: List<Entry>. This entry's files and subdirectories, if they exist.
+# - os_job: Future. Expensive OS I/O calls to fully determine the entry's properties.
 @total_ordering
 class Entry:
     def __init__(self, path, depth=0):
+
+        # Initial properties
         self.path = path
         self.depth = depth
         self.name = os.path.basename(path) 
         self.type = Entry_type.UNKNOWN
         self.size = 0
-        if self.depth <= args.log_depth:
-            log.queue(self.path)
-        self.executor = executor.submit(self.os)
 
-    # I/O intensive operations, to be done in thread pool
+        # Log the presence of near-top-level directories
+        if self.depth <= args.log_depth:
+            logger.queue(self.path)
+
+        # Add expensive OS calls to ThreadPoolExecutor queue
+        self.os_job = executor.submit(self.os)
+
+    # I/O intensive OS operations, to be done in thread pool.
+    # This includes determining the entry's type (directory or file),
+    # populating its children if it is a directory,
+    # and fetching its byte size if it is a file.
     def os(self):
         if os.path.isdir(self.path):
             self.type = Entry_type.DIRECTORY
@@ -83,33 +101,41 @@ class Entry:
             self.type = Entry_type.FILE
             self.size = os.path.getsize(self.path)
 
-    # tree node representation
+    # Tree node representation (the primary output of this program)
+    # Only the name, type, size, and children are included
     def node(self):
-        self.executor.result()
+
+        if self.depth <= args.log_depth:
+            logger.working(self.path)
+
+        # Wait for result of OS calls job
+        self.os_job.result()
+
+        # Now that the children of the entry have been computed,
+        # we can calculate the recursive size of the entry (if it is a directory).
         child_nodes = list()
         if self.type == Entry_type.DIRECTORY:
             child_nodes = [ child.node() for child in sorted(self.children) ]
             self.size = sum( child.size for child in self.children )
+
         if self.depth <= args.log_depth:
-            log.finish(self.path)
+            logger.finish(self.path)
+
         return [ self.name, int(self.type), self.size, *child_nodes ]
 
-    # string representation
+    # JSON string representation
     def __str__(self):
         return json.dumps(self.node(), separators=(',', ':'))
 
-    # equality comparator
-    def __eq__(self, other):
+    # Entries are ordered such that directories are before files (compare_type), then alphabetically (compare_name).
+    def __eq__(self, other): # Equality comparator
         return ((self.type, self.name) == (other.type, other.name))
-
-    # less than comparator
-    def __lt__(self, other):
+    def __lt__(self, other): # Less than comparator
         return ((self.type, self.name) < (other.type, other.name))
 
-def traverse_parallel(entry):
-    return traverse(entry, parallel=True)
-
 if __name__ == '__main__':
+
+    # Program descrition and arguments
     parser = argparse.ArgumentParser(
         prog='find.py',
         description=
@@ -132,10 +158,16 @@ Each entry in tree has the structure
     parser.add_argument('-o', '--out', help='output file')
     args = parser.parse_args()
 
+    # Multiprocessor execution pool
     executor = ThreadPoolExecutor(max_workers=args.nproc)
-    log = Log()
+
+    # Fancy logging
+    logger = Logger()
+
+    # Enter the tree from the root entry
     root_entry = Entry(args.root, depth=0)
 
+    # Populate the tree and write it out
     if args.out:
         with open(args.out, "w") as f:
             json.dump(root_entry.node(), f, separators=(',', ':'))
