@@ -13,6 +13,36 @@ import json
 # including their sizes (in bytes), recursively calculated for directories
 # ========
 
+class col:
+    HEADER = '\033[95m'
+    OKBLUE = '\033[94m'
+    OKCYAN = '\033[96m'
+    OKGREEN = '\033[92m'
+    WARNING = '\033[93m'
+    FAIL = '\033[91m'
+    ENDC = '\033[0m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+                
+    UNDOLINE = '\033[A\33[2KT\r'
+
+class Log:
+    def __init__(self):
+        self.state = dict()
+        self.n = 0
+    def queue(self, path):
+        self.state[path] = col.OKBLUE + 'Queued \t' + col.ENDC
+        self.log()
+        self.n += 1
+    def finish(self, path):
+        self.state[path] = col.OKGREEN + 'Crawled\t' + col.ENDC
+        self.log()
+    def log(self):
+        print(
+                col.UNDOLINE * self.n 
+                + "\n".join(status + path for (path, status) in sorted(self.state.items()))
+        )
+
 # Entry_type: Differentiates directories and various file types.
 # Currently only has one generic file type.
 class Entry_type(IntEnum):
@@ -37,6 +67,8 @@ class Entry:
         self.name = os.path.basename(path) 
         self.type = Entry_type.UNKNOWN
         self.size = 0
+        if self.depth <= args.log_depth:
+            log.queue(self.path)
         self.executor = executor.submit(self.os)
 
     # I/O intensive operations, to be done in thread pool
@@ -54,13 +86,12 @@ class Entry:
     # tree node representation
     def node(self):
         self.executor.result()
+        child_nodes = list()
         if self.type == Entry_type.DIRECTORY:
             child_nodes = [ child.node() for child in sorted(self.children) ]
             self.size = sum( child.size for child in self.children )
-        elif self.type == Entry_type.FILE:
-            child_nodes = list()
-        if self.depth < 3:
-            print(self.path)
+        if self.depth <= args.log_depth:
+            log.finish(self.path)
         return [ self.name, int(self.type), self.size, *child_nodes ]
 
     # string representation
@@ -96,12 +127,13 @@ Each entry in tree has the structure
     )
     parser.add_argument('root', help='path to the root directory')
     parser.add_argument('--depth', type=int, default=-1, help="maximum search depth; -1=infinity")
+    parser.add_argument('--log-depth', type=int, default=2, help="maximum log depth")
     parser.add_argument('--nproc', type=int, default=1, help="maximum number of multiprocessing processes to use")
-    parser.add_argument('--minproc', type=int, default=1, help="minimum number of multiprocessing processes to use")
     parser.add_argument('-o', '--out', help='output file')
     args = parser.parse_args()
 
     executor = ThreadPoolExecutor(max_workers=args.nproc)
+    log = Log()
     root_entry = Entry(args.root, depth=0)
 
     if args.out:

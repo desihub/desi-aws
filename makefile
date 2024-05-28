@@ -9,7 +9,7 @@ subdir=$(release)
 
 # Find: Scan for filesystem structure in the release
 find.json: find.py
-	python3 find.py $(release) --nproc 128 --minproc 32 -o $@
+	python3 find.py $(release) --nproc 128 -o $@
 
 # Build c++ scanning program (for benchmarking)
 find: find.cpp
