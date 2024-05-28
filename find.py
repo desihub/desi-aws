@@ -37,24 +37,31 @@ class Entry:
         self.name = os.path.basename(path) 
         self.type = Entry_type.UNKNOWN
         self.size = 0
-        self.children = list()
-        executor.submit(self.os).result()
+        self.executor = executor.submit(self.os)
 
     # I/O intensive operations, to be done in thread pool
     def os(self):
         if os.path.isdir(self.path):
             self.type = Entry_type.DIRECTORY
-            if self.depth != args.depth:
-                self.children = ( Entry( os.path.join(self.path, child_name), depth=self.depth+1) for child_name in os.listdir(self.path) )
-            if self.depth < 3:
-                print(self.path)
+            if self.depth == args.depth:
+                self.children = list()
+            else:
+                self.children = [ Entry( os.path.join(self.path, child_name), depth=self.depth+1) for child_name in os.listdir(self.path) ]
         elif os.path.isfile(self.path):
             self.type = Entry_type.FILE
             self.size = os.path.getsize(self.path)
 
     # tree node representation
     def node(self):
-        return [ self.name, int(self.type), self.size, *[ child.node() for child in sorted(self.children) ] ]
+        self.executor.result()
+        if self.type == Entry_type.DIRECTORY:
+            child_nodes = [ child.node() for child in sorted(self.children) ]
+            self.size = sum( child.size for child in self.children )
+        elif self.type == Entry_type.FILE:
+            child_nodes = list()
+        if self.depth < 3:
+            print(self.path)
+        return [ self.name, int(self.type), self.size, *child_nodes ]
 
     # string representation
     def __str__(self):
