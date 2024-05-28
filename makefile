@@ -5,7 +5,7 @@ root=$(DESI_ROOT)/public
 release=$(root)/edr
 
 # Subdirectory that we want to upload
-select=$(release)
+subdir=$(release)
 
 # Build scanning program
 find: find.cpp
@@ -15,15 +15,15 @@ find: find.cpp
 find.json: find
 	./find $(release) > $@
 
-# Select: Batch upload paths into large directories (>10^12 bytes)
-select.json: select.py find.json
-	python3 select.py $(release) --file-tree find.json --selection $(select) --min-size 1000000000000 -o $@
+# Queue: Batch upload paths into large directories (>10^12 bytes), and add these to the queue
+queue.json: queue.py find.json
+	python3 queue.py $(release) --file-tree find.json --subdir $(subdir) --max-batch-size 1000000000000 -o $@
 
 # Upload: Upload batch directories
-upload: upload.py select.json
+upload: upload.py queue.json
 	python3 upload.py $(root) \
 		--bucket s3://desidata \
-		--selection select.json \
+		--queue queue.json \
 		--remap '{ "$(release)/spectro/data": "raw_spectro_data", "$(release)/target": "target" }' \
 		--max-dirs 100 \
 		--max-workers 128 \

@@ -16,12 +16,12 @@ Uploads stuff
 )
 parser.add_argument('root', help='Path to the root directory')
 parser.add_argument('--bucket', help='URI to S3 bucket (s3://bucket)')
-parser.add_argument('--selection', help='Path to the list of selected nodes')
+parser.add_argument('--queue', help='Path to the list of queueed nodes')
 parser.add_argument('--remap', help=
 """JSON key-value pairs specifying how specific directories are to be remapped to different targets.
 
 { "original_directory_1": "target_directory_1", "original_directory_2": "target_directory_2" } """)
-parser.add_argument('--max-dirs', type=int, help='Maximum number of selected nodes to upload')
+parser.add_argument('--max-dirs', type=int, help='Maximum number of queueed nodes to upload')
 parser.add_argument('--max-workers', type=int, help='Maximum number of workers to use')
 args = parser.parse_args() # parse general args
 args.remap = json.loads(args.remap) # parse the JSON
@@ -47,14 +47,14 @@ def timestamp():
 ### INPUT FILE
 
 ## Load directory list
-with open(args.selection) as f:
-    select = json.load(f)
+with open(args.queue) as f:
+    queue = json.load(f)
 
 ## Upload directories from queue
 print(f"""
- {len(select["completed"]) + len(select["queued"])} {col.OKBLUE}directories listed for upload{col.ENDC}
- - {len(select["completed"])} {col.OKBLUE}already completed{col.ENDC}
- - {len(select["queued"])} {col.OKBLUE}queued (including {len(select["failed"])} previously failed){col.ENDC}
+ {len(queue["completed"]) + len(queue["queued"])} {col.OKBLUE}directories listed for upload{col.ENDC}
+ - {len(queue["completed"])} {col.OKBLUE}already completed{col.ENDC}
+ - {len(queue["queued"])} {col.OKBLUE}queued (including {len(queue["failed"])} previously failed){col.ENDC}
 """)
 
 ## Max number of directories to upload; Default 8
@@ -70,20 +70,20 @@ print(f"{col.OKGREEN} Using a maximum of {args.max_workers} workers {col.ENDC}")
 
 ## For updating directory list
 def write(data):
-    with open("select.json", "w") as f:
+    with open("queue.json", "w") as f:
         json.dump(data, f)
 
 ### UPLOADS
 
 index = 0
-while len(select["queued"]) > 0:
+while len(queue["queued"]) > 0:
 
     ## Stop if max_dirs exceeded
     if index == args.max_dirs: 
         print(f"{timestamp()} {col.OKBLUE}Finished uploading {args.max_dirs} directories. Stopping... {col.ENDC}")
         break
 
-    subdir = select["queued"][0]
+    subdir = queue["queued"][0]
     index += 1
 
     ## Progress fraction indicator
@@ -126,10 +126,10 @@ while len(select["queued"]) > 0:
     
     ## Remove from queue if success
     if os.waitstatus_to_exitcode(s5cmd) == 0:
-        select["queued"].remove(subdir) 
-        if subdir in select["failed"]: select["failed"].remove(subdir) 
-        select["completed"].append(subdir) 
-        write(select) 
+        queue["queued"].remove(subdir) 
+        if subdir in queue["failed"]: queue["failed"].remove(subdir) 
+        queue["completed"].append(subdir) 
+        write(queue) 
         continue
 
     ## Retry with aws-cli if fail
@@ -142,23 +142,23 @@ while len(select["queued"]) > 0:
 
     ## Remove from queue if success
     if os.waitstatus_to_exitcode(awscli) == 0:
-        select["queued"].remove(subdir) 
-        if subdir in select["failed"]: select["failed"].remove(subdir) 
-        select["completed"].append(subdir) 
-        write(select) 
+        queue["queued"].remove(subdir) 
+        if subdir in queue["failed"]: queue["failed"].remove(subdir) 
+        queue["completed"].append(subdir) 
+        write(queue) 
         continue
 
     ## If failed again, move to end of queue and append to failed list
     print(f"{timestamp()} {col.BOLD}{col.FAIL}{header} Failed to sync with awscli! {col.ENDC}")
     sys.stderr.write("AWSCLI ERROR: " + abs_path + "\n")
 
-    select["queued"].remove(subdir) 
-    select["failed"].append(subdir) 
-    select["queued"].append(subdir) 
-    write(select) 
+    queue["queued"].remove(subdir) 
+    queue["failed"].append(subdir) 
+    queue["queued"].append(subdir) 
+    write(queue) 
 
 print(f"""
- {len(select["completed"]) + len(select["queued"])} {col.OKBLUE}directories listed for upload{col.ENDC}
- - {len(select["completed"])} {col.OKBLUE}now completed{col.ENDC}
- - {len(select["queued"])} {col.OKBLUE}still queued (including {len(select["failed"])} failed){col.ENDC}
+ {len(queue["completed"]) + len(queue["queued"])} {col.OKBLUE}directories listed for upload{col.ENDC}
+ - {len(queue["completed"])} {col.OKBLUE}now completed{col.ENDC}
+ - {len(queue["queued"])} {col.OKBLUE}still queued (including {len(queue["failed"])} failed){col.ENDC}
 """)
