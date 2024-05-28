@@ -21,13 +21,14 @@ class Entry_type(IntEnum):
     FILE = 1
 
 # An Entry describes a directory or file with the following attributes:
-# - path: string. The entry's absolute path.
-# - name: string. The entry base name.
-# - type: int. The enum of the entry type given by Entry_type.
-# - size: int. The byte size of the entry, calculated recursively for directories.
-# - children: Array<Entry>. The entry's files and subdirectories, if they exist.
-# It is ordered such that directories are before files (compare_type), 
-# then alphabetically (compare_name).
+# - path: string. This entry's absolute path.
+# - depth: int. This entry's distance to the root entry.
+# - name: string. This entry's base name.
+# - type: int. The enum of this entry's type, given by Entry_type.
+# - size: int. This entry's byte size, calculated recursively for directories.
+# - children: Array<Entry>. This entry's files and subdirectories, if they exist.
+# It is ordered such that directories are before files (compare_type), then alphabetically (compare_name).
+# Only the name, type, size, and children are included in the final JSON tree
 @total_ordering
 class Entry:
     def __init__(self, path, depth=0):
@@ -64,9 +65,10 @@ class Entry:
 def traverse(entry, parallel=False):
     if entry.type == Entry_type.DIRECTORY:
         if entry.depth == args.depth: return entry
+        if entry.depth < 3: print(entry.path)
 
         child_depth = entry.depth + 1
-        entry.children = sorted([ Entry( os.path.join(entry.path, child_name), depth=child_depth ) for child_name in os.listdir(entry.path) ])
+        entry.children = [ Entry( os.path.join(entry.path, child_name), depth=child_depth ) for child_name in os.listdir(entry.path) ]
 
         if parallel:
             entry.children = list(map(traverse_parallel, entry.children))
