@@ -30,8 +30,9 @@ class Entry_type(IntEnum):
 # then alphabetically (compare_name).
 @total_ordering
 class Entry:
-    def __init__(self, path):
+    def __init__(self, path, depth=0):
         self.path = path
+        self.depth = depth
         self.name = os.path.basename(path) 
         self.type = Entry_type.UNKNOWN
         self.size = 0
@@ -63,9 +64,14 @@ class Entry:
 def traverse(entry):
 
     if entry.type == Entry_type.DIRECTORY:
-        child_entries = sorted([ Entry(child_path) for child_path in os.scandir(entry.path) ])
+        if entry.depth == args.depth: return entry
 
-        if args.nproc > 1: 
+        child_entries = sorted([ 
+                                Entry( os.path.join(entry.path, child_name), depth=entry.depth+1 ) 
+                                for child_name in os.listdir(entry.path) 
+                        ])
+
+        if args.nproc > 1 and entry.depth == 0: 
             with Pool(args.nproc) as pool:
                 entry.children = list(pool.map(traverse, child_entries))
         else:
@@ -99,11 +105,12 @@ Each entry in tree has the structure
     """
     )
     parser.add_argument('root', help='path to the root directory')
+    parser.add_argument('--depth', type=int, default=-1, help="maximum search depth; -1=infinity")
     parser.add_argument('--nproc', type=int, default=1, help="number of multiprocessing processes to use")
     parser.add_argument('-o', '--out', help='output file')
     args = parser.parse_args()
 
-    root_entry = Entry(args.root)
+    root_entry = Entry(args.root, depth=0)
     traverse(root_entry)
 
     if args.out:
