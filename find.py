@@ -38,13 +38,15 @@ class Logger:
         self.state = dict()
         self.n = 0
     def queue(self, path):
+        self.n = len(self.state)
         self.state[path] = col.OKBLUE  + 'Queued  \t' + col.ENDC
         self.log()
-        self.n += 1
     def working(self, path):
+        self.n = len(self.state)
         self.state[path] = col.OKCYAN  + 'Crawling\t' + col.ENDC
         self.log()
     def finish(self, path):
+        self.n = len(self.state)
         self.state[path] = col.OKGREEN + 'Crawled \t' + col.ENDC
         self.log()
     def log(self):
