@@ -17,64 +17,70 @@ namespace po = boost::program_options;
 // including their sizes (in bytes), recursively calculated for directories
 // ========
 
-// Entry: A directory or file
-
 // Entry_type: Differentiates directories and various file types.
 // Currently only has one generic file type.
 enum Entry_type { 
-    directory = 0,
-    file = 1
+    Unknown = -1,
+    Directory = 0,
+    File = 1
 };
 
-// Entry_key: For sorting entries.
-// Currently puts directories before files (compare_type), then alphabetically (compare_name).
-struct Entry_key {
-    std::string entry_name;
-    Entry_type entry_type;
+// An Entry is a directory or a file with the following attributes:
+// - path: fs::path (->string). The entry's absolute path.
+// - name: string. The entry name. Cannot contain the " character.
+// - type: Entry_type (->int). The enum of the entry type.
+// It is ordered such that directories are before files (compare_type), 
+// then alphabetically (compare_name).
+struct Entry {
+    fs::path path;
+    std::string name;
+    Entry_type type;
 
-    std::strong_ordering operator<=>(const Entry_key& other) const {
-        auto compare_name = entry_name <=> other.entry_name; 
-        auto compare_type = entry_type <=> other.entry_type; 
+    std::strong_ordering operator<=>(const Entry& other) const {
+        auto compare_name = name <=> other.name; 
+        auto compare_type = type <=> other.type; 
         if (compare_type != 0) return compare_type;
         return compare_name;
     }
 };
 
-
-std::uintmax_t hierarchy(fs::path path, struct Entry_key key, int depth)
+// Recursively traverses filesystem tree, printing entry names, types, and sizes.
+// The sizes of directories are calculated recursively.
+std::uintmax_t traverse(struct Entry entry, int depth)
 {
     std::uintmax_t size = 0;
 
     std::cout << "[";
-    std::cout << "\"" << key.entry_name << "\"";
+    std::cout << "\"" << entry.name << "\",";
+    std::cout << "\"" << entry.type << "\"";
 
-    if(key.entry_type == directory) {
-        std::cout << ",0";
-
+    if(entry.type == Directory) 
+    {
         if(depth != 0) 
         {
-            std::map<struct Entry_key, fs::path> sorted_dir;
+            std::set<struct Entry> children;
 
-            for(const auto& dir_entry : fs::directory_iterator{path})
+            for(const auto& child : fs::directory_iterator{entry.path})
             {
-                fs::path entry_path = dir_entry.path();
-                struct Entry_key entry_key = {
-                    .entry_name = entry_path.filename(),
-                    .entry_type = (dir_entry.is_directory()) ? directory : file,
+                fs::path child_path = child.path();
+                struct Entry child_entry = {
+                    .path = child_path,
+                    .name = child_path.filename(),
+                    .type = (child.is_directory()) ? Directory : File
                 };
-
-                sorted_dir[ entry_key ] = entry_path;
+                children.insert(child_entry);
             }
-            for(const auto&[ entry_key, entry_path ] : sorted_dir)
+            for(const Entry &child_entry : children)
             {
                 std::cout << ",";
-                size += hierarchy(entry_path, entry_key, depth - 1);
+                size += traverse(child_entry, depth - 1);
             }
         }
-    } else {
-        std::cout << ",1";
+    } 
+    else if(entry.type == File)
+    {
         try {
-            size = fs::file_size(path);
+            size = fs::file_size(entry.path);
         }
         catch (const std::exception& e){
             std::cerr << "Exception: " << e.what() << "\n";
@@ -134,11 +140,12 @@ int main(int argc, char* argv[])
     }
 
     const fs::path base_path{base_directory};
-    const struct Entry_key base_key = { 
-        .entry_name = base_path.filename(),
-        .entry_type = directory,
+    const struct Entry base = { 
+	.path = base_path,
+        .name = base_path.filename(),
+        .type = Directory,
     };
 
-    hierarchy(base_path, base_key, max_depth);
+    traverse(base, max_depth);
     std::cout << "\n";
 }
