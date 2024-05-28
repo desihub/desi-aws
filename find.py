@@ -1,7 +1,7 @@
 import os
 from enum import IntEnum
 from functools import total_ordering
-from multiprocessing import Pool
+from concurrent.futures import ThreadPoolExecutor
 import sys
 import argparse
 import json
@@ -38,11 +38,19 @@ class Entry:
         self.type = Entry_type.UNKNOWN
         self.size = 0
         self.children = list()
+        executor.submit(self.os).result()
 
-        if os.path.isdir(path):
+    # I/O intensive operations, to be done in thread pool
+    def os(self):
+        if os.path.isdir(self.path):
             self.type = Entry_type.DIRECTORY
-        elif os.path.isfile(path):
+            if self.depth != args.depth:
+                self.children = ( Entry( os.path.join(self.path, child_name), depth=self.depth+1) for child_name in os.listdir(self.path) )
+            if self.depth < 3:
+                print(self.path)
+        elif os.path.isfile(self.path):
             self.type = Entry_type.FILE
+            self.size = os.path.getsize(self.path)
 
     # tree node representation
     def node(self):
@@ -59,35 +67,6 @@ class Entry:
     # less than comparator
     def __lt__(self, other):
         return ((self.type, self.name) < (other.type, other.name))
-
-# Recursively traverses filesystem tree, printing entry names, types, and sizes.
-# The sizes of directories are calculated recursively.
-def traverse(entry, parallel=False):
-    if entry.type == Entry_type.DIRECTORY:
-        if entry.depth == args.depth: return entry
-        if entry.depth < 3: print(entry.path)
-
-        child_depth = entry.depth + 1
-        entry.children = [ Entry( os.path.join(entry.path, child_name), depth=child_depth ) for child_name in os.listdir(entry.path) ]
-
-        if parallel:
-            entry.children = list(map(traverse_parallel, entry.children))
-        elif (len(entry.children) >= args.minproc) and (args.nproc > 1):
-            with Pool(args.nproc) as pool:
-                entry.children = list(pool.map(traverse_parallel, entry.children))
-        else:
-            entry.children = list(map(traverse, entry.children))
-
-        entry.size = sum(child.size for child in entry.children)
-
-    elif entry.type == Entry_type.FILE:
-        try:
-            entry.size = os.path.getsize(entry.path)
-        except OSError as e:
-            sys.stderr.write(e.strerror)
-            sys.stderr.flush()
-
-    return entry
 
 def traverse_parallel(entry):
     return traverse(entry, parallel=True)
@@ -115,8 +94,8 @@ Each entry in tree has the structure
     parser.add_argument('-o', '--out', help='output file')
     args = parser.parse_args()
 
+    executor = ThreadPoolExecutor(max_workers=args.nproc)
     root_entry = Entry(args.root, depth=0)
-    traverse(root_entry)
 
     if args.out:
         with open(args.out, "w") as f:
