@@ -156,12 +156,12 @@ Each entry in tree has the structure
     parser.add_argument('root', help='path to the root directory')
     parser.add_argument('--depth', type=int, default=-1, help="maximum search depth; -1=infinity")
     parser.add_argument('--log-depth', type=int, default=2, help="maximum log depth")
-    parser.add_argument('--nproc', type=int, default=1, help="maximum number of multiprocessing processes to use")
+    parser.add_argument('--max-workers', type=int, default=1, help="maximum number of threads to use")
     parser.add_argument('-o', '--out', help='output file')
     args = parser.parse_args()
 
     # Multiprocessor execution pool
-    executor = ThreadPoolExecutor(max_workers=args.nproc)
+    executor = ThreadPoolExecutor(max_workers=args.max_workers)
 
     # Fancy logging
     logger = Logger()

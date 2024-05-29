@@ -31,8 +31,8 @@ def traverse(entry_path, entry):
 
     # Determine relationship between this entry and the selected subdirectory
     common_path = os.path.commonpath([ entry_path, subdir_path ]) 
-    inside_subdir = common_path == entry_path
-    contains_subdir = common_path == subdir_path
+    contains_subdir = common_path == entry_path
+    inside_subdir = common_path == subdir_path
     
     # If this entry is contained within the selected subdirectory, 
     # and is batchable, then add its path to the queue
@@ -44,7 +44,7 @@ def traverse(entry_path, entry):
     elif (inside_subdir and not batchable) or contains_subdir:
         for child in entry_children:
             child_name = child[0]
-            child_path = os.path.join([ base, child_name ])
+            child_path = os.path.join(entry_path, child_name)
             traverse(child_path, child)
 
     # Otherwise do nothing

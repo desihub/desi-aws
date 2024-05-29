@@ -3,14 +3,14 @@
 root=/dvs_ro/cfs/cdirs/desi/public
 
 # Specific data release
-release=$(root)/edr/spectro/data
+release=$(root)/edr
 
 # Subdirectory that we want to upload
 subdir=$(release)
 
 # Find: Scan for filesystem structure in the release
 find.json: find.py makefile
-	python3 find.py $(release) --nproc 64 --log-depth 0 -o $@
+	python3 find.py $(release) --max-workers 128 --log-depth 2 -o $@
 
 # Batch: Batch upload paths into large directories (>10^12 bytes), and add these to the queue
 batch.json: batch.py find.json makefile
