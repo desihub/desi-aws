@@ -47,7 +47,7 @@ def timestamp():
 ### INPUT FILE
 
 ## Load directory list
-with open(args.queue) as f:
+with open(args.batch) as f:
     queue = json.load(f)
 
 ## Upload directories from queue
@@ -70,7 +70,7 @@ print(f"{col.OKGREEN} Using a maximum of {args.max_workers} workers {col.ENDC}")
 
 ## For updating directory list
 def write(data):
-    with open("queue.json", "w") as f:
+    with open(args.batch, "w") as f:
         json.dump(data, f)
 
 ### UPLOADS

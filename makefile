@@ -1,5 +1,6 @@
-# Base directory in S3 bucket
-root=$(DESI_ROOT)/public
+# Root directory to public DESI files
+# change `dvs_ro` to `global` for write access
+root=/dvs_ro/cfs/cdirs/desi/public
 
 # Specific data release
 release=$(root)/edr
@@ -7,23 +8,19 @@ release=$(root)/edr
 # Subdirectory that we want to upload
 subdir=$(release)
 
-# Build scanning program
-find: find.cpp
-	g++ find.cpp -std=c++20 -lboost_program_options -o $@
-
 # Find: Scan for filesystem structure in the release
-find.json: find
-	./find $(release) > $@
+find.json: find.py makefile
+	python3 find.py $(release) --max-workers 128 --log-depth 2 -o $@
 
-# Queue: Batch upload paths into large directories (>10^12 bytes), and add these to the queue
-queue.json: queue.py find.json
-	python3 queue.py $(release) --file-tree find.json --subdir $(subdir) --max-batch-size 1000000000000 -o $@
+# Batch: Batch upload paths into large directories (>10^12 bytes), and add these to the queue
+batch.json: batch.py find.json makefile
+	python3 batch.py $(release) --file-tree find.json --subdir $(subdir) --max-batch-size 1000000000000 -o $@
 
 # Upload: Upload batch directories
-upload: upload.py queue.json
+upload: upload.py queue.json makefile
 	python3 upload.py $(root) \
 		--bucket s3://desidata \
-		--queue queue.json \
+		--batch batch.json \
 		--remap '{ "$(release)/spectro/data": "raw_spectro_data", "$(release)/target": "target" }' \
 		--max-dirs 100 \
 		--max-workers 128 \
