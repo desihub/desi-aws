@@ -2,7 +2,7 @@
 
 Tooling for uploading DESI data from NERSC Perlmutter to AWS S3.
 
-## Usage
+## Simple usage
 
 The upload configuration is set in the *makefile*.
 When uploading a new release, you ideally only need to change the `release` variable in the *makefile* (from, say `$(root)/edr` to `$(root)/dr1`),
@@ -12,6 +12,8 @@ make upload
 ```
 in a login node repeatedly until all files have been transferred.
 However, my code could very well break in a year or two, so below is a full explanation of the pipeline.
+
+## Advanced configuration
 
 ### Paths to main directories
 
