@@ -22,6 +22,6 @@ upload: upload.py queue.json makefile
 		--bucket s3://desidata \
 		--batch batch.json \
 		--remap '{ "$(release)/spectro/data": "raw_spectro_data", "$(release)/target": "target" }' \
-		--max-dirs 100 \
+		--max-dirs 1000 \
 		--max-workers 128 \
 		2> upload_errors.txt
