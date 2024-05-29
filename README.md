@@ -11,7 +11,7 @@ then run
 make upload
 ```
 in a login node repeatedly until all files have been transferred.
-However, my code could very well break in a year or two, so below are all the details.
+However, my code could very well break in a year or two, so below is a full explanation of the pipeline.
 
 ### Paths to main directories
 
@@ -40,6 +40,10 @@ This is done by running
 make find.json
 ```
 which uses the *find.py* script to generate a JSON file tree stored as *find.json*.
+
+---
+<details>
+ <summary><h4>Technical details</h4></summary>
 
 The *find.py* script is a multi-threaded, recursive filesystem crawler. For example, given a directory structure like
 ```
@@ -83,6 +87,9 @@ More details can be found in the inline comments of *find.py*, or by running
 ```bash
 python3 find.py --help
 ```
+</details>
+
+---
 
 ### Batching
 
