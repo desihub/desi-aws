@@ -59,7 +59,8 @@ it generates a JSON tree like
 ```json
 [
   ".", 0, 89110240,
-  [ "docs", 0, 28915,
+  [
+    "docs", 0, 28915,
     [ "README.md", 1, 478 ],
     [ "entry_schema.png", 1, 28437 ]
   ],
@@ -94,3 +95,10 @@ make batch.json
 which looks for satisfactory directories and files with *batch.py*, storing them in *batch.json*.
 
 ### Upload
+
+To upload, run
+```
+make upload
+```
+The number of batches to run until the program (*upload.py*) exits can be configured in the *makefile* with *--max-dirs*. 
+The default is 1000, and we recommend something in that magnitude for an overnight upload.
