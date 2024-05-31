@@ -43,11 +43,20 @@ make find.json
 ```
 which uses the *find.py* script to generate a JSON file tree stored as *find.json*.
 
+The *find.py* script is a multi-threaded filesystem crawler. 
+Its performance is bounded by the speed of calls to the operating system,
+so it runs best with a large number of workers available in its thread pool.
+Thus, the `--max-workers` parameter in the *makefile* should be set anywhere between 32 and 128,
+and and you should run `make find.json` in a **compute node** with the corresponding number of CPUs.
+
 ---
 <details>
  <summary><h4>Technical details</h4></summary>
 
-The *find.py* script is a multi-threaded, recursive filesystem crawler. For example, given a directory structure like
+The *find.py* script recursively crawls the filesystem starting from a specified root directory.
+It outputs a JSON tree of every file and subdirectory contained within a specified depth (default: unlimited),
+with information on their name, type, and byte size.
+For example, if the given root directory has the following structure,
 ```
 .
 ├── docs
@@ -101,11 +110,31 @@ To generate these batches, we run
 ```
 make batch.json
 ```
-which looks for satisfactory directories and files with *batch.py*, storing them in *batch.json*.
+which looks for satisfactory directories and files with *batch.py*, storing them in *batch.json*. 
+This script is very fast, so it can be run in the **login node**.
+
+For testing, you may filter the selection to only within a specific subdirectory of the root directory by setting the `subdir` variable in the *makefile*.
+
+---
+<details>
+ <summary><h4>Technical details</h4></summary>
+</details>
+
+---
 
 ### Upload
 
 To upload, run
+```
+make upload
+```
+repeatedly until every batch has been transferred.
+This calls the *upload.py* script. By default, 1000 batches are transferred in each run. 
+Feel free to adjust this `--max-batches` parameter depending on how often you want the script to automatically stop.
+
+This script is best run in a **login node**, which has much faster network connections than a **compute node**. 
+
+
 ```
 make upload
 ```
