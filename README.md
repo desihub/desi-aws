@@ -2,6 +2,16 @@
 
 Tooling for uploading DESI data from NERSC Perlmutter to AWS S3.
 
+## Installation
+
+First, ensure you have the following dependencies installed/satisfied:
+1. An AWS user account with read and write access to the **desidata** storage bucket. Contact Anthony Kremin or Stephen Bailey for this.
+2. **Python 3**.
+3. **aws-cli**, AWS's official command-line client. Refer to the instructions at [docs.aws.amazon.com/AmazonS3/latest/userguide/setup-aws-cli.html](https://docs.aws.amazon.com/AmazonS3/latest/userguide/setup-aws-cli.html) to install and configure with your AWS credentials.
+4. **s5cmd**, the third-party S3 upload client we use. Refer to the instructions at [github.com/peak/s5cmd](https://github.com/peak/s5cmd).
+
+Then, clone this repository into your space at NERSC Perlmutter.
+
 ## Simple usage
 
 The upload configuration is set in the *makefile*.
