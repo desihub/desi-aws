@@ -1,0 +1,104 @@
+<!doctype html>
+<html>
+	<head>
+<style>
+nav {
+	display: flex;
+}
+ul {
+	border: 1px solid black;
+}
+</style>
+	</head>
+	<body>
+		<noscript>This page requires Javascript to view</noscript>
+		<nav>
+			<ul>
+				<li>Loading...</li>
+			</ul>
+			<ul></ul>
+			<ul></ul>
+			<ul></ul>
+			<ul></ul>
+			<ul></ul>
+			<ul></ul>
+			<ul></ul>
+			<ul></ul>
+			<ul></ul>
+		</nav>
+		<script> 
+const bucket_url = "https://desidata.s3.amazonaws.com/"
+
+const lists = [...document.querySelectorAll("ul")]
+let depth = 0
+
+function query_url(query) {
+	return bucket_url + "?" + new URLSearchParams(query)
+}
+
+async function query(key) {
+	const response = await fetch(query_url({
+		"list-type": 2,
+		"prefix": key,
+		"delimiter": "/",
+	}))
+
+	const data = new window.DOMParser()
+		.parseFromString(await response.text(), "text/xml")
+		.firstChild
+
+	const files = [...data.querySelectorAll("Contents")]
+		.map(file => ({
+			key:		file.querySelector("Key").textContent,
+			lastModified:	file.querySelector("LastModified").textContent,
+			eTag:		file.querySelector("ETag").textContent,
+			size:		file.querySelector("Size").textContent,
+			storageClass:	file.querySelector("StorageClass").textContent,
+		}))
+		.map(file => ({
+			...file,
+			name:		file.key.replace(key, "")
+		}))
+
+	const dirs = [...data.querySelectorAll("CommonPrefixes")]
+		.map(dir => ({
+			key:		dir.querySelector("Prefix").textContent
+		}))
+		.map(dir => ({
+			...dir,
+			name:		dir.key.replace(key, "")
+		}))
+
+	return ({ dirs, files })
+}
+
+function renderDir(dir) {
+	const item = document.createElement("li")
+	item.textContent = dir.name
+	item.addEventListener("click", async () => {
+		depth = dir.key.split("/").length - 1
+		console.log(dir.key, depth)
+		render(await query(dir.key))
+	})
+	return item
+}
+function renderFile(file) {
+	const item = document.createElement("li")
+	item.textContent = file.name + file.size
+	return item
+}
+function render({dirs, files }) {
+	lists[depth].innerHTML = ""
+	lists[depth].append(...dirs.map(renderDir), ...files.map(renderFile))
+	lists.forEach( (list, index) => {
+		list.style.visibility = index > depth ? "hidden" : "visible"
+	})
+}
+
+async function main() {
+	render(await query(""))
+}
+main()
+		</script>
+	</body>
+</html>
