@@ -8,14 +8,19 @@ nav {
 ul {
 	border: 1px solid black;
 }
+a {
+	display: flex;
+	justify-content: space-between;
+	gap: .5rem;
+}
 </style>
 	</head>
 	<body>
+		<h1>DESI filesystem on AWS</h1>
 		<noscript>This page requires Javascript to view</noscript>
+		<output>Loading...</output>
 		<nav>
-			<ul>
-				<li>Loading...</li>
-			</ul>
+			<ul></ul>
 			<ul></ul>
 			<ul></ul>
 			<ul></ul>
@@ -27,13 +32,16 @@ ul {
 			<ul></ul>
 		</nav>
 		<script> 
-const bucket_url = "https://desidata.s3.amazonaws.com/"
+const bucketURL = "https://desidata.s3.amazonaws.com/"
 
+const output = document.querySelector("output")
 const lists = [...document.querySelectorAll("ul")]
+
 let depth = 0
+let key = ""
 
 function query_url(query) {
-	return bucket_url + "?" + new URLSearchParams(query)
+	return bucketURL + "?" + new URLSearchParams(query)
 }
 
 async function query(key) {
@@ -57,39 +65,63 @@ async function query(key) {
 		}))
 		.map(file => ({
 			...file,
-			name:		file.key.replace(key, "")
+			name:		file.key.replace(key, ""),
+			isDir:		false,
 		}))
 
 	const dirs = [...data.querySelectorAll("CommonPrefixes")]
 		.map(dir => ({
-			key:		dir.querySelector("Prefix").textContent
+			key:		dir.querySelector("Prefix").textContent,
 		}))
 		.map(dir => ({
 			...dir,
-			name:		dir.key.replace(key, "")
+			name:		dir.key.slice(0, -1).replace(key, ""),
+			isDir:		true,
 		}))
 
 	return ({ dirs, files })
 }
 
-function renderDir(dir) {
-	const item = document.createElement("li")
-	item.textContent = dir.name
-	item.addEventListener("click", async () => {
-		depth = dir.key.split("/").length - 1
-		console.log(dir.key, depth)
-		render(await query(dir.key))
-	})
-	return item
-}
-function renderFile(file) {
-	const item = document.createElement("li")
-	item.textContent = file.name + file.size
-	return item
-}
 function render({dirs, files }) {
+	const children = [...dirs, ...files].map(node => {
+		const item = document.createElement("li")
+
+		const link = document.createElement("a")
+
+		const name = document.createElement("span")
+		const info = document.createElement("span")
+
+		name.textContent = node.name
+
+		if(node.isDir) {
+			link.href = "#" + node.key
+			link.addEventListener("click", async () => {
+				depth = node.key.split("/").length - 1
+				key = node.key
+				console.log(node.key, depth)
+				render(await query(node.key))
+			})
+			info.textContent = "/"
+		} else {
+			link.href = bucketURL + node.key
+			link.setAttribute("download", "true")
+			info.textContent = "(" + node.size + ")"
+		}
+
+		link.append(name, info)
+		item.appendChild(link)
+		return item
+	})
+
+	output.textContent = "$DESI_ROOT/" + key
+
+	// remove original children
 	lists[depth].innerHTML = ""
-	lists[depth].append(...dirs.map(renderDir), ...files.map(renderFile))
+
+	// add new children
+	lists[depth].append(...children)
+
+	// update visibilities
 	lists.forEach( (list, index) => {
 		list.style.visibility = index > depth ? "hidden" : "visible"
 	})
