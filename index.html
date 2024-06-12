@@ -135,10 +135,10 @@ main > * {
 			<a id="download" title="click to download" href="#" target="_blank">Download directory list</a>
 		</main>
 		<script> 
-const version = "EDR"
-if(localStorage.getItem("version") != version) {
+const DESI_RELEASE = "edr/"
+if(localStorage.getItem("DESI_RELEASE") != DESI_RELEASE) {
 	localStorage.clear()
-	localStorage.setItem("version", version)
+	localStorage.setItem("DESI_RELEASE", DESI_RELEASE)
 }
 
 const bucketURL = "https://desidata.s3.amazonaws.com/"
@@ -257,7 +257,12 @@ async function render() {
 
 	const isDir = !key || key.endsWith("/")
 
-	output.textContent = "$DESI_DATA/" + key;
+	output.textContent = ("$DESI_DATA/" + key)
+		.replace("$DESI_DATA/" + DESI_RELEASE,			"$DESI_ROOT/")
+		.replace("$DESI_DATA/raw_spectro_data/",		"$DESI_SPECTRO_DATA/")
+		.replace("$DESI_ROOT/spectro/redux/",			"$DESI_SPECTRO_REDUX/")
+		.replace("$DESI_ROOT/spectro/desi_spectro_calib/",	"$DESI_SPECTRO_CALIB/")
+		.replace("$DESI_DATA/target/",				"$DESI_TARGET/")
 
 	if(key) updateSelection()
 
