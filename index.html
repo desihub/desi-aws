@@ -150,7 +150,7 @@ let name = "desidata"
 let previousKey = null
 let key = ""
 
-function query_url(query) {
+function queryURL(query) {
 	return bucketURL + "?" + new URLSearchParams(query)
 }
 
@@ -180,7 +180,7 @@ async function query(key) {
 	}
 	const results = document.createElement("div")
 	while(true) {
-		const response = await fetch(query_url(params))
+		const response = await fetch(queryURL(params))
 
 		const result = new window.DOMParser()
 				.parseFromString(await response.text(), "text/xml")
@@ -249,13 +249,27 @@ function updateSelection() {
 }
 async function render() {
 	if(previousKey === key) return
+	previousKey = key
+
+	const isDir = !key || key.endsWith("/")
 
 	output.textContent = "$DESI_DATA/" + key;
 
 	if(key) updateSelection()
 
+	// update visibilities
+	const depth = key.split("/").length - (1*isDir)
+	lists[depth].innerHTML = ""
+	lists.forEach( (list, index) => {
+		if(index > depth) {
+			list.setAttribute("hidden", "")
+		} else {
+			list.removeAttribute("hidden")
+		}
+	});
+
 	// process files
-	if(key && !key.endsWith("/")) {
+	if(!isDir) {
 		download.href = bucketURL + key
 		download.download = name
 		download.style.background = "blue"
@@ -303,23 +317,8 @@ async function render() {
 		return item
 	})
 
-	const depth = key.split("/").length - 1
-
-	// remove original children
-	lists[depth].innerHTML = ""
-
 	// add new children
 	lists[depth].append(...childItems)
-
-	// update visibilities
-	lists.forEach( (list, index) => {
-		if(index > depth) {
-			list.setAttribute("hidden", "")
-		} else {
-			list.removeAttribute("hidden")
-		}
-	});
-
 }
 output.addEventListener("click", () => {
 	navigator.clipboard.writeText(output.textContent)
@@ -341,13 +340,14 @@ window.addEventListener("keydown", (event) => {
 					selected = selected.parentNode.nextElementSibling.firstChild
 					break
 				case "ArrowLeft":
-					selected = selected.parentNode.parentNode.previousElementSibling.firstChild.firstChild
+					selected = selected.parentNode.parentNode.previousElementSibling.querySelector(".selected")
 					break
 				case "ArrowRight":
 					selected = selected.parentNode.parentNode.nextElementSibling.firstChild.firstChild
 					break
 			}
 		} catch (error) { }
+		console.log(selected)
 		selected.focus()
 		event.preventDefault()
 		event.stopPropagation()
