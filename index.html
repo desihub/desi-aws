@@ -1,47 +1,154 @@
 <!doctype html>
 <html>
 	<head>
+		<title>DESI filesystem on AWS</title>
 <style>
+html, body {
+	margin: 0;
+	font-size: 14px;
+	width: 100%;
+	height: 100%;
+	font-family: sans-serif;
+	font-stretch: condensed;
+}
+body {
+	display: flex;
+	flex-direction: column;
+	background: #eee;
+}
 nav {
 	display: flex;
+	flex-direction: reverse;
+	height: 0;
+	flex-grow: 1;
+	overflow-x: scroll;
 }
 ul {
-	border: 1px solid black;
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	max-height: 100%;
+	width: fit-content;
+	overflow-y: scroll;
 }
-a {
+li {
+	background: white;
+	border-bottom: 1px solid #aaa;
+	border-right: 2px solid #aaa;
+	padding: 0 0.1rem;
 	display: flex;
 	justify-content: space-between;
 	gap: .5rem;
+	color: black;
+	text-decoration: none;
+}
+li > * {
+	pointer-events: none;
+	white-space: nowrap;
+	overflow: hidden;
+}
+li > :first-child {
+	max-width: 15em;
+	min-width: 1em;
+	text-overflow: ellipsis;
+}
+li > :last-child {
+	font-size: 0.9em;
+	font-style: italic;
+	opacity: 0.6;
+}
+li.selected {
+	background: blue;
+	color: white;
+}
+li.selected.dir{
+	background: green;
+}
+a {
+	cursor: pointer;
+}
+#output {
+	background: white;
+	user-select: all;
+	flex-grow: 1;
+}
+#download {
+	background: green;
+	color: white;
+	width: 15rem;
+	text-align: center;
+	text-decoration: none;
+	user-select: none;
+}
+li:hover, li:focus,
+#download:hover, #download:focus,
+#output:hover, #output:focus {
+	background: #666 !important;
+	color: white;
+}
+li:active,
+#download:active,
+#output:active {
+	background: black !important;
+}
+main {
+	background: #ddd;
+	padding: 0.5rem;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+	justify-content: center;
+}
+p {
+	width: 100%;
+	margin: 0;
+}
+main > * {
+	padding: 0.5rem;
+	border-radius: .5rem;
 }
 </style>
 	</head>
 	<body>
-		<h1>DESI filesystem on AWS</h1>
 		<noscript>This page requires Javascript to view</noscript>
-		<output>Loading...</output>
 		<nav>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
-			<ul></ul>
+			<ul> Loading... </ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul> <ul></ul>
 		</nav>
+		<main>
+			<p>
+				Welcome to the <strong>desidata</strong> bucket on AWS S3! 
+				Select a file or directory to get its path in the <a href="https://github.com/desihub/desidocker">Docker image</a> (click the path to copy).
+				Press <em>control</em> while selecting to directly download the file or directory.
+				Note that this file browser is intended for light exploration. 
+				For programmatic access to this bucket, please see the full <a href="https://data.desi.lbl.gov/doc/access/#amazon-web-services">Data Access instructions</a>.
+			</p>
+			<a id="output" title="click to copy">$DESI_DATA/</a>
+			<a id="download" title="click to download">Download directory list</a>
+		</main>
 		<script> 
 const bucketURL = "https://desidata.s3.amazonaws.com/"
 
-const output = document.querySelector("output")
+const download = document.getElementById("download")
+const output = document.getElementById("output")
+const nav = document.querySelector("nav")
 const lists = [...document.querySelectorAll("ul")]
 
-let depth = 0
+let name = "desidata"
 let key = ""
 
 function query_url(query) {
 	return bucketURL + "?" + new URLSearchParams(query)
+}
+
+// https://stackoverflow.com/a/20732091
+function formatSize (size) { 
+	const i = size == 0 ? 0 : Math.floor(Math.log(size) / Math.log(1024));
+	return (size / Math.pow(1024, i)).toFixed(2) * 1 + ' ' + ['B', 'kB', 'MB', 'GB', 'TB'][i];
+}
+
+// https://stackoverflow.com/a/18197341
+function formatKeys(keys) {
+	return 'data:text/plain;charset=utf-8,' + encodeURIComponent(keys.join("\n"))
 }
 
 async function query(key) {
@@ -82,11 +189,52 @@ async function query(key) {
 	return ({ dirs, files })
 }
 
-function render({dirs, files }) {
-	const children = [...dirs, ...files].map(node => {
-		const item = document.createElement("li")
+async function handleEvent(event) {
+	key = event.target.id
+	name = event.target.title
+	event.preventDefault()
+	event.stopPropagation()
+	await render()
+	if(event.ctrlKey) download.click()
+}
+async function render() {
+	output.textContent = "$DESI_DATA/" + key;
+	[...document.querySelectorAll(".selected")].forEach(selected => { selected.classList.remove("selected") })
 
-		const link = document.createElement("a")
+	if(key) {
+		document.getElementById(key).classList.add("selected")
+		let traceKey = key.split("/")
+		while(traceKey.length > 1) {
+			traceKey.pop()
+			document.getElementById(traceKey.join("/") + "/").classList.add("selected")
+		}
+	}
+
+	// process files
+	if(key && !key.endsWith("/")) {
+		download.href = bucketURL + key
+		download.download = name
+		download.style.background = "blue"
+		download.textContent = "Download file"
+		return
+	}
+
+	// process directories
+
+	const {dirs, files} = await query(key)
+	const children = [...dirs, ...files]
+
+	const childKeys = children.map(node => node.key)
+	download.href = formatKeys(childKeys)
+	download.download = name + ".txt"
+	download.textContent = "Download directory list"
+	download.style.background = "green"
+
+	const childItems = children.map(node => {
+		const item = document.createElement("li")
+		item.id = node.key
+		item.title = node.name
+		item.addEventListener("click", handleEvent)
 
 		const name = document.createElement("span")
 		const info = document.createElement("span")
@@ -94,41 +242,42 @@ function render({dirs, files }) {
 		name.textContent = node.name
 
 		if(node.isDir) {
-			link.href = "#" + node.key
-			link.addEventListener("click", async () => {
-				depth = node.key.split("/").length - 1
-				key = node.key
-				console.log(node.key, depth)
-				render(await query(node.key))
-			})
 			info.textContent = "/"
+			item.classList.add("dir")
 		} else {
-			link.href = bucketURL + node.key
-			link.setAttribute("download", "true")
-			info.textContent = "(" + node.size + ")"
+			info.textContent = "(" + formatSize(node.size) + ")"
 		}
 
-		link.append(name, info)
-		item.appendChild(link)
+		item.append(name, info)
 		return item
 	})
 
-	output.textContent = "$DESI_ROOT/" + key
+	const depth = key.split("/").length - 1
 
 	// remove original children
 	lists[depth].innerHTML = ""
 
 	// add new children
-	lists[depth].append(...children)
+	lists[depth].append(...childItems)
 
 	// update visibilities
 	lists.forEach( (list, index) => {
-		list.style.visibility = index > depth ? "hidden" : "visible"
-	})
+		if(index > depth) {
+			list.setAttribute("hidden", "")
+		} else {
+			list.removeAttribute("hidden")
+		}
+	});
+
 }
+output.addEventListener("click", () => {
+	navigator.clipboard.writeText(output.textContent)
+})
+nav.addEventListener("click", main)
 
 async function main() {
-	render(await query(""))
+	key = ""
+	render()
 }
 main()
 		</script>
