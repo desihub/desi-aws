@@ -109,6 +109,9 @@ main > * {
 	padding: 0.5rem;
 	border-radius: .5rem;
 }
+.loading * {
+	cursor: wait !important;
+}
 </style>
 	</head>
 	<body>
@@ -156,17 +159,32 @@ function formatKeys(keys) {
 }
 
 async function query(key) {
-	const response = await fetch(query_url({
+
+	let continuationToken = ""
+	const params = {
 		"list-type": 2,
 		"prefix": key,
 		"delimiter": "/",
-	}))
+	}
+	const results = document.createElement("div")
+	while(true) {
+		const response = await fetch(query_url(params))
 
-	const data = new window.DOMParser()
-		.parseFromString(await response.text(), "text/xml")
-		.firstChild
+		const result = new window.DOMParser()
+				.parseFromString(await response.text(), "text/xml")
+				.firstChild
+		results.append(result)
 
-	const files = [...data.querySelectorAll("Contents")]
+		if(result.querySelector("IsTruncated").textContent == "false") break
+
+		document.body.classList.add("loading")
+		continuationToken = result.querySelector("NextContinuationToken").textContent
+		console.log(results.querySelectorAll("Contents").length)
+		params["continuation-token"] = continuationToken
+	}
+	document.body.classList.remove("loading")
+
+	const files = [...results.querySelectorAll("Contents")]
 		.map(file => ({
 			key:		file.querySelector("Key").textContent,
 			lastModified:	file.querySelector("LastModified").textContent,
@@ -180,7 +198,7 @@ async function query(key) {
 			isDir:		false,
 		}))
 
-	const dirs = [...data.querySelectorAll("CommonPrefixes")]
+	const dirs = [...results.querySelectorAll("CommonPrefixes")]
 		.map(dir => ({
 			key:		dir.querySelector("Prefix").textContent,
 		}))
@@ -189,6 +207,7 @@ async function query(key) {
 			name:		dir.key.slice(0, -1).replace(key, ""),
 			isDir:		true,
 		}))
+	console.log(dirs.length + files.length)
 
 	return ({ dirs, files })
 }
