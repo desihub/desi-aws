@@ -132,6 +132,12 @@ main > * {
 			<a id="download" title="click to download" href="#" target="_blank">Download directory list</a>
 		</main>
 		<script> 
+const version = "EDR"
+if(localStorage.getItem("version") != version) {
+	localStorage.clear()
+	localStorage.setItem("version", version)
+}
+
 const bucketURL = "https://desidata.s3.amazonaws.com/"
 
 const download = document.getElementById("download")
@@ -141,6 +147,7 @@ const nav = document.querySelector("nav")
 const lists = [...document.querySelectorAll("ul")]
 
 let name = "desidata"
+let previousKey = null
 let key = ""
 
 function query_url(query) {
@@ -159,6 +166,11 @@ function formatKeys(keys) {
 }
 
 async function query(key) {
+
+	previousKey = key
+
+	let nodes = localStorage.getItem(key)
+	if(nodes) return JSON.parse(nodes)
 
 	let continuationToken = ""
 	const params = {
@@ -207,9 +219,14 @@ async function query(key) {
 			name:		dir.key.slice(0, -1).replace(key, ""),
 			isDir:		true,
 		}))
-	console.log(dirs.length + files.length)
 
-	return ({ dirs, files })
+	nodes = { dirs, files }
+	try {
+		localStorage.setItem(key, JSON.stringify(nodes))
+	} catch (error) {
+	}
+
+	return nodes
 }
 
 async function handleEvent(event) {
@@ -231,6 +248,8 @@ function updateSelection() {
 	}
 }
 async function render() {
+	if(previousKey === key) return
+
 	output.textContent = "$DESI_DATA/" + key;
 
 	if(key) updateSelection()
