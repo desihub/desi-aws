@@ -1,7 +1,10 @@
 <!doctype html>
-<html>
+<html lang="en">
 	<head>
+		<meta charset="utf-8">
 		<title>DESI filesystem on AWS</title>
+		<meta name=viewport content='width=device-width, initial-scale=1'>
+		<link rel="shortcut icon" type=image/png href="/icon.png">
 <style>
 html, body {
 	margin: 0;
@@ -187,11 +190,12 @@ async function query(key) {
 				.firstChild
 		results.append(result)
 
+		console.log(results.querySelectorAll("Contents").length)
+
 		if(result.querySelector("IsTruncated").textContent == "false") break
 
 		document.body.classList.add("loading")
 		continuationToken = result.querySelector("NextContinuationToken").textContent
-		console.log(results.querySelectorAll("Contents").length)
 		params["continuation-token"] = continuationToken
 	}
 	document.body.classList.remove("loading")
@@ -347,7 +351,6 @@ window.addEventListener("keydown", (event) => {
 					break
 			}
 		} catch (error) { }
-		console.log(selected)
 		selected.focus()
 		event.preventDefault()
 		event.stopPropagation()
