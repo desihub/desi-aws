@@ -31,7 +31,7 @@ ul {
 	width: fit-content;
 	overflow-y: scroll;
 }
-li {
+.node {
 	background: white;
 	border-bottom: 1px solid #aaa;
 	border-right: 2px solid #aaa;
@@ -42,26 +42,26 @@ li {
 	color: black;
 	text-decoration: none;
 }
-li > * {
+.node > * {
 	pointer-events: none;
 	white-space: nowrap;
 	overflow: hidden;
 }
-li > :first-child {
+.node > :first-child {
 	max-width: 15em;
 	min-width: 1em;
 	text-overflow: ellipsis;
 }
-li > :last-child {
+.node > :last-child {
 	font-size: 0.9em;
 	font-style: italic;
 	opacity: 0.6;
 }
-li.selected {
+.node.selected {
 	background: blue;
 	color: white;
 }
-li.selected.dir{
+.node.selected.dir{
 	background: green;
 }
 a {
@@ -71,6 +71,8 @@ a {
 	background: white;
 	user-select: all;
 	flex-grow: 1;
+	text-decoration: none;
+	color: black;
 }
 #download {
 	background: green;
@@ -80,13 +82,13 @@ a {
 	text-decoration: none;
 	user-select: none;
 }
-li:hover, li:focus,
-#download:hover, #download:focus,
-#output:hover, #output:focus {
+.node:hover,
+#download:hover,
+#output:hover {
 	background: #666 !important;
 	color: white;
 }
-li:active,
+.node:active,
 #download:active,
 #output:active {
 	background: black !important;
@@ -117,19 +119,21 @@ main > * {
 		<main>
 			<p>
 				Welcome to the <strong>desidata</strong> bucket on AWS S3! 
-				Select a file or directory to get its path in the <a href="https://github.com/desihub/desidocker">Docker image</a> (click the path to copy).
-				Press <em>control</em> while selecting to directly download the file or directory.
+				Select a file or directory to see its path in the <a href="https://github.com/desihub/desidocker">Docker image</a> (click the path to copy).
+				Double-click, control-click, or control-enter to download the file or a list of the directory&rsquo;s contents.
 				Note that this file browser is intended for light exploration. 
 				For programmatic access to this bucket, please see the full <a href="https://data.desi.lbl.gov/doc/access/#amazon-web-services">Data Access instructions</a>.
+				<a href="#" id="hide">[Hide this message.]</a>
 			</p>
-			<a id="output" title="click to copy">$DESI_DATA/</a>
-			<a id="download" title="click to download">Download directory list</a>
+			<a id="output" title="click to copy" href="#">$DESI_DATA/</a>
+			<a id="download" title="click to download" href="#" target="_blank">Download directory list</a>
 		</main>
 		<script> 
 const bucketURL = "https://desidata.s3.amazonaws.com/"
 
 const download = document.getElementById("download")
 const output = document.getElementById("output")
+const hide = document.getElementById("hide")
 const nav = document.querySelector("nav")
 const lists = [...document.querySelectorAll("ul")]
 
@@ -195,20 +199,22 @@ async function handleEvent(event) {
 	event.preventDefault()
 	event.stopPropagation()
 	await render()
-	if(event.ctrlKey) download.click()
+	if(event.ctrlKey || event.type == "dblclick") download.click()
+}
+function updateSelection() {
+	[...document.querySelectorAll(".selected")].forEach(selected => selected.classList.remove("selected"))
+
+	document.getElementById(key).classList.add("selected")
+	let traceKey = key.split("/")
+	while(traceKey.length > 1) {
+		traceKey.pop()
+		document.getElementById(traceKey.join("/") + "/").classList.add("selected")
+	}
 }
 async function render() {
 	output.textContent = "$DESI_DATA/" + key;
-	[...document.querySelectorAll(".selected")].forEach(selected => { selected.classList.remove("selected") })
 
-	if(key) {
-		document.getElementById(key).classList.add("selected")
-		let traceKey = key.split("/")
-		while(traceKey.length > 1) {
-			traceKey.pop()
-			document.getElementById(traceKey.join("/") + "/").classList.add("selected")
-		}
-	}
+	if(key) updateSelection()
 
 	// process files
 	if(key && !key.endsWith("/")) {
@@ -232,9 +238,15 @@ async function render() {
 
 	const childItems = children.map(node => {
 		const item = document.createElement("li")
-		item.id = node.key
-		item.title = node.name
-		item.addEventListener("click", handleEvent)
+		const link = document.createElement("a")
+		link.classList.add("node")
+		link.href = "#"
+
+		link.id = node.key
+		link.title = node.name
+		link.addEventListener("click", handleEvent)
+		link.addEventListener("focus", handleEvent)
+		link.addEventListener("dblclick", handleEvent)
 
 		const name = document.createElement("span")
 		const info = document.createElement("span")
@@ -243,12 +255,13 @@ async function render() {
 
 		if(node.isDir) {
 			info.textContent = "/"
-			item.classList.add("dir")
+			link.classList.add("dir")
 		} else {
 			info.textContent = "(" + formatSize(node.size) + ")"
 		}
 
-		item.append(name, info)
+		link.append(name, info)
+		item.append(link)
 		return item
 	})
 
@@ -273,13 +286,37 @@ async function render() {
 output.addEventListener("click", () => {
 	navigator.clipboard.writeText(output.textContent)
 })
-nav.addEventListener("click", main)
+hide.addEventListener("click", (event) => {
+	hide.parentNode.parentNode.removeChild(hide.parentNode)
+	event.preventDefault()
+})
 
-async function main() {
-	key = ""
-	render()
-}
-main()
+window.addEventListener("keydown", (event) => {
+	if(key && event.key.startsWith("Arrow")) {
+		let selected = document.getElementById(key)
+		try {
+			switch(event.key) {
+				case "ArrowUp":
+					selected = selected.parentNode.previousElementSibling.firstChild
+					break
+				case "ArrowDown":
+					selected = selected.parentNode.nextElementSibling.firstChild
+					break
+				case "ArrowLeft":
+					selected = selected.parentNode.parentNode.previousElementSibling.firstChild.firstChild
+					break
+				case "ArrowRight":
+					selected = selected.parentNode.parentNode.nextElementSibling.firstChild.firstChild
+					break
+			}
+		} catch (error) { }
+		selected.focus()
+		event.preventDefault()
+		event.stopPropagation()
+	}
+})
+
+render()
 		</script>
 	</body>
 </html>
